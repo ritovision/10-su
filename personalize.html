@@ -77,7 +77,7 @@ layout: null
   </footer>
 
   <script type="module">
-    import { ensureConnected } from "/assets/web3/foundation.js";
+    import { ensureConnected, ensureMainnetOrWarn } from "/assets/web3/foundation.js";
 
     // Elements and state //////////////////////////////////////////////////////////////////////////////////////////////
     const squareNumberInput = document.getElementById("square-number");
@@ -239,7 +239,10 @@ layout: null
           return alert(error.message);
         }
       };
-      await ensureConnected(doSendTransaction);
+      await ensureConnected(async (clients) => {
+        await ensureMainnetOrWarn(clients);
+        await doSendTransaction(clients);
+      });
     });
   </script>
 </body>
