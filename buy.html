@@ -10,6 +10,7 @@ layout: null
   <title>Su Squares, mint a square</title>
   <link rel="canonical" href="https://tenthousandsu.com/buy" />
   <link rel="stylesheet" href="assets/main.css">
+  {% include nav-menu-head.html %}
   {% include alert-modal-head.html %}
   <style>
     #square-number {
@@ -20,11 +21,7 @@ layout: null
 </head>
 
 <body>
-  <header>
-    <a id="logo" href="/"><img src="assets/logo-su-squares.svg" style="width:348px;height:57px;object-fit: cover;"
-        alt="Su Squares logo"></a>
-    <button id="connect-wallet" class="btn">Connect wallet</button>
-  </header>
+  {% include nav-header.html %}
   <article class="lead">
     <h1>Mint Su Squares <span id="square-number-with-number-sign"></span></h1>
     <p><em>If you have a question, please mail <a
@@ -155,8 +152,8 @@ layout: null
     // Handle connect wallet button and its animation //////////////////////////////////////////////////////////////////
     ethereumClient.watchAccount((account) => {
       connectWalletButton.innerText = account.isConnected
-        ? "Connected: " + account.address.slice(0, 6) + "\u2026" + account.address.slice(-4)
-        : "Connect wallet";
+        ? "Connected:\n" + account.address.slice(0, 6) + "\u2026" + account.address.slice(-4)
+        : "Connect\nWallet";
     });
     document.getElementById('connect-wallet').addEventListener('click', () => {
       web3modal.openModal()
