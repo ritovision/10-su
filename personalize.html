@@ -10,14 +10,12 @@ layout: null
   <title>Su Squares, personalize</title>
   <link rel="canonical" href="https://tenthousandsu.com/personalize" />
   <link rel="stylesheet" href="assets/main.css">
+  {% include nav-menu-head.html %}
   {% include alert-modal-head.html %}
 </head>
 
 <body>
-  <header>
-    <a id="logo" href="/"><img src="assets/logo-su-squares.svg" style="width:348px;height:57px;object-fit: cover;" alt="Su Squares logo"></a>
-    <button id="connect-wallet" class="btn">Connect wallet</button>
-  </header>
+  {% include nav-header.html %}
 
   <article class="lead">
     <h1>Personalize</h1>
@@ -238,8 +236,8 @@ layout: null
     // Handle connect wallet button and its animation //////////////////////////////////////////////////////////////////
     ethereumClient.watchAccount((account) => {
       connectWalletButton.innerText = account.isConnected
-        ? "Connected: " + account.address.slice(0, 6) + "\u2026" + account.address.slice(-4)
-        : "Connect wallet";
+        ? "Connected:\n" + account.address.slice(0, 6) + "\u2026" + account.address.slice(-4)
+        : "Connect\nWallet";
     });
     document.getElementById('connect-wallet').addEventListener('click', () => {
       web3modal.openModal()
