@@ -53,12 +53,14 @@
     </a>
   </article>
 
-  <article>
-    <section id="newly-minted" style="display:flex; align-items: center; width: 100%; margin-bottom: 2em">
-      <strong style="flex: 1 1 0">Newly minted</strong>
+  <article class="newly-feed">
+    <section id="newly-minted" class="newly-feed__section">
+      <strong class="newly-feed__heading">Newly minted</strong>
+      <div class="newly-feed__items"></div>
     </section>
-    <section id="newly-personalized" style="display:flex; align-items: center; width: 100%">
-      <strong style="flex: 1 1 0">Latest personalized</strong>
+    <section id="newly-personalized" class="newly-feed__section">
+      <strong class="newly-feed__heading">Latest personalized</strong>
+      <div class="newly-feed__items"></div>
     </section>
   </article>
 
@@ -96,6 +98,8 @@
         // Show newly minted and personalized Squares
         const newlyMintedSection = document.getElementById("newly-minted");
         const newlyPersonalizedSection = document.getElementById("newly-personalized");
+        const newlyMintedList = newlyMintedSection.querySelector(".newly-feed__items");
+        const newlyPersonalizedList = newlyPersonalizedSection.querySelector(".newly-feed__items");
         const mostRecentMintedSquares = squareExtra
           .map((extraData, index) => [index, extraData])
           .filter(([index, extraData]) => extraData !== null)
@@ -105,9 +109,9 @@
           const row = Math.floor((index - 1) / 100);
           const col = (index - 1) % 100;
           const squareNumber = index + 1;
-          newlyMintedSection.insertAdjacentHTML("beforeend",
-            `<a style="display:flex; flex-direction: column; align-items: center; justify-content: center; flex: 1 1 0" href="https://tenthousandsu.com/square#${squareNumber}">
-              <div style="background: url('https://tenthousandsu.com/build/wholeSquare.png'); height: 10px; width: 10px; background-position-x: ${-col * 10}px; background-position-y: ${-row * 10}px; display: inline-block; zoom: 5; image-rendering: pixelated;"></div>
+          newlyMintedList.insertAdjacentHTML("beforeend",
+            `<a class="newly-feed__item" href="https://tenthousandsu.com/square#${squareNumber}">
+              <span class="newly-feed__thumb" style="background-image:url('https://tenthousandsu.com/build/wholeSquare.png'); background-position:${-col * 10}px ${-row * 10}px;"></span>
               <p>#${squareNumber}</p>
             </a>`
           );
@@ -122,9 +126,9 @@
           const row = Math.floor((index) / 100);
           const col = (index) % 100;
           const squareNumber = index + 1;
-          newlyPersonalizedSection.insertAdjacentHTML("beforeend",
-            `<a style="display:flex; flex-direction: column; align-items: center; justify-content: center; flex: 1 1 0" href="https://tenthousandsu.com/square#${squareNumber}">
-              <div style="background: url('https://tenthousandsu.com/build/wholeSquare.png'); height: 10px; width: 10px; background-position-x: ${-col * 10}px; background-position-y: ${-row * 10}px; display: inline-block; zoom: 5; image-rendering: pixelated;"></div>
+          newlyPersonalizedList.insertAdjacentHTML("beforeend",
+            `<a class="newly-feed__item" href="https://tenthousandsu.com/square#${squareNumber}">
+              <span class="newly-feed__thumb" style="background-image:url('https://tenthousandsu.com/build/wholeSquare.png'); background-position:${-col * 10}px ${-row * 10}px;"></span>
               <p>#${squareNumber}</p>
             </a>`
           );
