@@ -53,9 +53,11 @@
     </div>
 
     <h2>Location</h2>
-    <div style="position:relative;height:1000px; zoom: 0.5">
-      <img id="theImage" src="build/wholeSquare.png" alt="All Su Squares" style="height:1000px; width:1000px">
-      <img id="arrow" src="assets/dr.png" alt="Location" style="height:100px; width:100px; position:absolute">
+    <div class="square-location">
+      <div class="square-location__canvas">
+        <img id="theImage" class="square-location__image" src="build/wholeSquare.png" alt="All Su Squares">
+        <img id="arrow" class="square-location__arrow" src="assets/dr.png" alt="Location">
+      </div>
     </div>
 
     <h2>Emojified</h2>
@@ -115,25 +117,27 @@
 
       // Set arrow location, based on quadrant
       const elArrow = document.getElementById('arrow');
+      const mapScale = 0.5;
+      const scalePosition = (value) => `${value * mapScale}px`;
+      const setArrow = (src, topPx, leftPx) => {
+        elArrow.src = src;
+        elArrow.style.top = scalePosition(topPx);
+        elArrow.style.left = scalePosition(leftPx);
+      };
+      elArrow.style.width = `${100 * mapScale}px`;
+      elArrow.style.height = `${100 * mapScale}px`;
+
       if (row < 50) {
         if (col < 50) {
-          elArrow.src = 'assets/ul.png';
-          elArrow.style.top = `${row * 10 + 10}px`;
-          elArrow.style.left = `${col * 10 + 10}px`;
+          setArrow('assets/ul.png', row * 10 + 10, col * 10 + 10);
         } else {
-          elArrow.src = 'assets/ur.png';
-          elArrow.style.top = `${row * 10 + 10}px`;
-          elArrow.style.left = `${col * 10 - 100}px`;
+          setArrow('assets/ur.png', row * 10 + 10, col * 10 - 100);
         }
       } else {
         if (col < 50) {
-          elArrow.src = 'assets/dl.png';
-          elArrow.style.top = `${row * 10 - 100}px`;
-          elArrow.style.left = `${col * 10 + 10}px`;
+          setArrow('assets/dl.png', row * 10 - 100, col * 10 + 10);
         } else {
-          elArrow.src = 'assets/dr.png';
-          elArrow.style.top = `${row * 10 - 100}px`;
-          elArrow.style.left = `${col * 10 - 100}px`;
+          setArrow('assets/dr.png', row * 10 - 100, col * 10 - 100);
         }
       }
 
