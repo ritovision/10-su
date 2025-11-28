@@ -93,8 +93,9 @@ layout: null
   </footer>
 
   <script type="module">
+    import { ensureConnected } from "/assets/web3/foundation.js";
+
     // Elements and state //////////////////////////////////////////////////////////////////////////////////////////////
-    const connectWalletButton = document.getElementById("connect-wallet");
     const topLeftSquareNumberInput = document.getElementById("top-left-square-number");
     const titleInput = document.getElementById("title");
     const titleCountSpan = document.getElementById("title-count");
@@ -345,49 +346,12 @@ layout: null
       preflightOutputTextArea.dispatchEvent(new Event("input"));
     });
 
-    // Web3Modal setup /////////////////////////////////////////////////////////////////////////////////////////////////
-    // warning: Web3Modal does not use SRI, error reported at https://github.com/WalletConnect/web3modal/issues/1305
-    // documentation from https://docs.walletconnect.com/2.0/web3modal/html/wagmi/installation
-    // hack from https://github.com/WalletConnect/web3modal-examples/issues/46
-    window.process = { env: { NODE_ENV: "development" } };
-    import {
-      EthereumClient,
-      w3mConnectors,
-      w3mProvider,
-      WagmiCore, // same as from @wagmi/core
-      WagmiCoreChains, // same as from @wagmi/core/chains
-    } from 'https://unpkg.com/@web3modal/ethereum@2.7.1'
-    import { Web3Modal } from 'https://unpkg.com/@web3modal/html@2.7.1'
-    const { configureChains, createConfig, writeContract, waitForTransaction } = WagmiCore;
-    const { mainnet } = WagmiCoreChains;
-    const walletConnectProjectId = '2aca272d18deb10ff748260da5f78bfd';
-    const chains = [mainnet];
-    const { publicClient } = configureChains(chains, [w3mProvider({ projectId: walletConnectProjectId })]);
-    const wagmiConfig = createConfig({
-      autoConnect: true,
-      connectors: w3mConnectors({ projectId: walletConnectProjectId, chains }),
-      publicClient
-    });
-    const ethereumClient = new EthereumClient(wagmiConfig, chains);
-    // todo: remove WalletConnect as the huge default option
-    const web3modal = new Web3Modal({ projectId: walletConnectProjectId }, ethereumClient);
-
-    // Handle connect wallet button and its animation //////////////////////////////////////////////////////////////////
-    ethereumClient.watchAccount((account) => {
-      connectWalletButton.innerText = account.isConnected
-        ? "Connected:\n" + account.address.slice(0, 6) + "\u2026" + account.address.slice(-4)
-        : "Connect\nWallet";
-    });
-    document.getElementById('connect-wallet').addEventListener('click', () => {
-      web3modal.openModal()
-    });
-
     // Handle personalize button ///////////////////////////////////////////////////////////////////////////////////////
     personalizeButton.addEventListener("click", async function () {
       if (!personalizationArgs) {
         return alert("ERROR: Please perform preflight, or manually edit the preflight box and pass validation, then try again.");
       }
-      const doSendTransaction = async ()=>{
+      const doSendTransaction = async ({ writeContract, waitForTransaction })=>{
         receiptsDiv.innerHTML = "<p>Sending transaction, waiting for confirmation&hellip;</p>";
         let result;
         try {
@@ -405,26 +369,7 @@ layout: null
           return alert(error.message);
         }
       };
-      // If the wallet is not connected, connect it
-      if (!ethereumClient.getAccount().isConnected) {
-        // Arm on connecting wallet, if connected then fire the transaction
-        const accountConnectionUnsubscriber = ethereumClient.watchAccount((account) => {
-          if (account.isConnected) {
-            doSendTransaction();
-          }
-        });
-        // Disarm if modal is closed
-        const modalUnsubscriber = web3modal.subscribeModal((modalState) => {
-          if (!modalState.open) {
-            accountConnectionUnsubscriber();
-            modalUnsubscriber();
-          }
-        });
-        await web3modal.openModal();
-      } else {
-        // The wallet is connected, fire the transaction
-        doSendTransaction();
-      }
+      await ensureConnected(doSendTransaction);
     });
   </script>
 </body>
