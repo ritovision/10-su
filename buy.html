@@ -11,6 +11,7 @@ layout: null
   <link rel="canonical" href="https://tenthousandsu.com/buy" />
   <link rel="stylesheet" href="assets/css/main.css">
   <link rel="stylesheet" href="assets/css/buy.css">
+  <link rel="stylesheet" href="assets/css/chooser.css">
   {% include nav-menu-head.html %}
   {% include alert-modal-head.html %}
   {% include offline-modal-head.html %}
@@ -26,10 +27,14 @@ layout: null
 
     <div id="pick-a-square">
       <h2>Which Square would you like?</h2>
-      <form>
-        <p><strong>Square number</strong> (between 1 and 10,000)</p>
+      <p><strong>Square number</strong> (between 1 and 10,000)</p>
+      <div class="square-lookup__controls">
         <input id="square-number" type="number" min="1" max="10000" required style="width:7em" placeholder="e.g. 2345">
-      </form>
+        <div class="square-lookup__actions">
+          <button id="square-choose-list" type="button">Choose from list</button>
+          <button id="square-choose-canvas" type="button">Choose from canvas</button>
+        </div>
+      </div>
       <button id="select-square" type="button" class="btn btn-lg">Select Square</button>
     </div>
 
@@ -53,37 +58,50 @@ layout: null
 
   <script type="module">
     import { ensureConnected, ensureMainnetOrWarn } from "/assets/web3/foundation.js";
+    import { attachListChooser } from "/assets/js/choosers/list-chooser.js";
+    import { attachCanvasChooser } from "/assets/js/choosers/canvas-chooser.js";
+    import { loadSquareData } from "/assets/js/square-data.js";
 
     // Elements and state //////////////////////////////////////////////////////////////////////////////////////////////
     const squareNumberWithNumberSignSpan = document.getElementById("square-number-with-number-sign");
     const squareNumberInput = document.getElementById("square-number");
+    const chooseListButton = document.getElementById("square-choose-list");
+    const chooseCanvasButton = document.getElementById("square-choose-canvas");
     const mintButton = document.getElementById("mint");
     const pickASquareDiv = document.getElementById("pick-a-square");
     const mintSelectedSquareDiv = document.getElementById("mint-selected-square");
     const receiptsDiv = document.getElementById("receipts");
     let squareNumber;
     let squarePersonalizations;
+    let squareExtra;
 
-    // Load personalizations ///////////////////////////////////////////////////////////////////////////////////////////
-    fetch("build/squarePersonalizations.json")
-      .then(response => response.json())
-      .then(data => { squarePersonalizations = data; })
-      .then(data => {
-        // Setup datalist for square number input
-        const datalist = document.createElement("datalist");
-        datalist.id = "square-numbers";
-        for (let i = 1; i <= 10000; i++) {
-          if (squarePersonalizations && squarePersonalizations[i - 1]) {
-            continue;
-          }
-          const option = document.createElement("option");
-          option.value = i;
-          datalist.appendChild(option);
-        }
-        squareNumberInput.setAttribute("list", "square-numbers");
-        squareNumberInput.parentNode.appendChild(datalist);
-        console.log(datalist);
-      })
+    // Load square data for availability checks ////////////////////////////////////////////////////////////////////////
+    loadSquareData().then(({ personalizations, extra }) => {
+      squarePersonalizations = personalizations;
+      squareExtra = extra;
+    }).catch((error) => {
+      console.error("Failed to load square data", error);
+    });
+
+    // Attach choosers /////////////////////////////////////////////////////////////////////////////////////////////////
+    if (chooseListButton) {
+      attachListChooser({
+        input: squareNumberInput,
+        trigger: chooseListButton,
+        filter: (_id, ctx) => !ctx.extra, // only unminted
+        title: "Choose an available Square",
+        description: "Only unminted Squares are shown.",
+      });
+    }
+
+    if (chooseCanvasButton) {
+      attachCanvasChooser({
+        input: squareNumberInput,
+        trigger: chooseCanvasButton,
+        filter: (_id, ctx) => !ctx.extra, // only unminted
+        title: "Choose square from canvas",
+      });
+    }
 
     // Validate Square number //////////////////////////////////////////////////////////////////////////////////////////
     squareNumberInput.addEventListener("input", () => {
@@ -101,10 +119,11 @@ layout: null
         return alert("Please enter a Square number.");
       }
       // If the personalizations are loaded, check that the Square is available
-      if (squarePersonalizations) {
-        if (squarePersonalizations[squareNumber - 1]) {
-          return alert("Sorry, Square " + squareNumber + " was already purchased.");
-        }
+      if (squareExtra && squareExtra[squareNumber - 1]) {
+        return alert("Sorry, Square " + squareNumber + " was already purchased.");
+      }
+      if (squarePersonalizations && squarePersonalizations[squareNumber - 1]) {
+        return alert("Sorry, Square " + squareNumber + " was already purchased.");
       }
       pickASquareDiv.style.display = "none";
       mintSelectedSquareDiv.style.display = "block";
