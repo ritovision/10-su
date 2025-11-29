@@ -9,7 +9,8 @@ layout: null
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Su Squares, cute squares you own and personalize</title>
   <meta name="description" content="The first ERC-721 NFT. Cute squares you own and personalize.">
-  <link rel="stylesheet" href="assets/main.css?20210926">
+  <link rel="stylesheet" href="assets/css/main.css">
+  <link rel="stylesheet" href="assets/css/square.css">
   {% include nav-menu-head.html %}
   {% include alert-modal-head.html %}
   {% include offline-modal-head.html %}
@@ -39,7 +40,7 @@ layout: null
     <div class="square-location">
       <div class="square-location__canvas">
         <img id="theImage" class="square-location__image" src="build/wholeSquare.png" alt="All Su Squares">
-        <img id="arrow" class="square-location__arrow" src="assets/dr.png" alt="Location">
+        <img id="arrow" class="square-location__arrow" src="assets/images/dr.png" alt="Location">
       </div>
     </div>
 
@@ -112,15 +113,15 @@ layout: null
 
       if (row < 50) {
         if (col < 50) {
-          setArrow('assets/ul.png', row * 10 + 10, col * 10 + 10);
+          setArrow('assets/images/ul.png', row * 10 + 10, col * 10 + 10);
         } else {
-          setArrow('assets/ur.png', row * 10 + 10, col * 10 - 100);
+          setArrow('assets/images/ur.png', row * 10 + 10, col * 10 - 100);
         }
       } else {
         if (col < 50) {
-          setArrow('assets/dl.png', row * 10 - 100, col * 10 + 10);
+          setArrow('assets/images/dl.png', row * 10 - 100, col * 10 + 10);
         } else {
-          setArrow('assets/dr.png', row * 10 - 100, col * 10 - 100);
+          setArrow('assets/images/dr.png', row * 10 - 100, col * 10 - 100);
         }
       }
 
