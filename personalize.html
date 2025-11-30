@@ -64,9 +64,10 @@ layout: null
 
     <h2>Personalize</h2>
     <p>Click this button to personalize your Square.</p>
-    <p>
+    <div class="wallet-actions">
+      <button id="open-wallet-app" type="button" class="btn">Open wallet</button>
       <button id="personalize" class="btn btn-lg">Personalize</button>
-    </p>
+    </div>
 
     <div id="receipts">
     </div>
@@ -79,7 +80,7 @@ layout: null
   </footer>
 
   <script type="module">
-    import { ensureConnected, ensureMainnetOrWarn } from "/assets/web3/foundation.js";
+    import { ensureConnected, ensureMainnetOrWarn, openWalletFromStore } from "/assets/web3/foundation.js";
 
     // Elements and state //////////////////////////////////////////////////////////////////////////////////////////////
     const squareNumberInput = document.getElementById("square-number");
@@ -90,6 +91,7 @@ layout: null
     const imageInput = document.getElementById("image");
     const imageStatusSpan = document.getElementById("image-status");
     const imagePreviewCanvas = document.getElementById("image-preview");
+    const openWalletButton = document.getElementById("open-wallet-app");
     const personalizeButton = document.getElementById("personalize");
     const receiptsDiv = document.getElementById("receipts");
     const underlayContractAddress = "0x992bDEC05cD423B73085586f7DcbbDaB953E0DCd";
@@ -207,6 +209,14 @@ layout: null
     if (urlParams.has("square")) {
       squareNumberInput.value = urlParams.get("square");
       squareNumberInput.dispatchEvent(new Event("input"));
+    }
+
+    if (openWalletButton) {
+      openWalletButton.addEventListener("click", () => {
+        if (!openWalletFromStore()) {
+          alert("No WalletConnect session found yet. Tap Connect Wallet first.");
+        }
+      });
     }
 
     // Handle personalize button ///////////////////////////////////////////////////////////////////////////////////////
