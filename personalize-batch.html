@@ -80,9 +80,10 @@ layout: null
 
     <h2>Personalize</h2>
     <p>Click this button to personalize your Squares.</p>
-    <p>
+    <div class="wallet-actions">
+      <button id="open-wallet-app" type="button" class="btn">Open wallet</button>
       <button id="personalize" class="btn btn-lg">Personalize</button>
-    </p>
+    </div>
 
     <div id="receipts">
     </div>
@@ -95,7 +96,7 @@ layout: null
   </footer>
 
   <script type="module">
-    import { ensureConnected, ensureMainnetOrWarn } from "/assets/web3/foundation.js";
+    import { ensureConnected, ensureMainnetOrWarn, openWalletFromStore } from "/assets/web3/foundation.js";
 
     // Elements and state //////////////////////////////////////////////////////////////////////////////////////////////
     const topLeftSquareNumberInput = document.getElementById("top-left-square-number");
@@ -109,6 +110,7 @@ layout: null
     const preflightButton = document.getElementById("preflight");
     const preflightOutputTextArea = document.getElementById("preflight-output");
     const preflightStatusSpan = document.getElementById("preflight-status");
+    const openWalletButton = document.getElementById("open-wallet-app");
     const personalizeButton = document.getElementById("personalize");
     const receiptsDiv = document.getElementById("receipts");
     const underlayContractAddress = "0x992bDEC05cD423B73085586f7DcbbDaB953E0DCd";
@@ -347,6 +349,14 @@ layout: null
       }
       preflightOutputTextArea.dispatchEvent(new Event("input"));
     });
+
+    if (openWalletButton) {
+      openWalletButton.addEventListener("click", () => {
+        if (!openWalletFromStore()) {
+          alert("No WalletConnect session found yet. Tap Connect Wallet first.");
+        }
+      });
+    }
 
     // Handle personalize button ///////////////////////////////////////////////////////////////////////////////////////
     personalizeButton.addEventListener("click", async function () {
