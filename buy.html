@@ -40,7 +40,10 @@ layout: null
 
     <div id="mint-selected-square" style="display:none">
       <p>Please connect your wallet using the button above and then click mint below.</p>
-      <button id="mint" type="button" class="btn btn-lg">Mint Square</button>
+      <div class="wallet-actions">
+        <button id="open-wallet-app" type="button" class="btn">Open wallet</button>
+        <button id="mint" type="button" class="btn btn-lg">Mint Square</button>
+      </div>
     </div>
 
     <p>Your purchase is subject to the terms, and your understanding of, our <a href="/white-paper">white paper</a>.</p>
@@ -57,7 +60,7 @@ layout: null
   </footer>
 
   <script type="module">
-    import { ensureConnected, ensureMainnetOrWarn } from "/assets/web3/foundation.js";
+    import { ensureConnected, ensureMainnetOrWarn, openWalletFromStore } from "/assets/web3/foundation.js";
     import { attachListChooser } from "/assets/js/choosers/list-chooser.js";
     import { attachCanvasChooser } from "/assets/js/choosers/canvas-chooser.js";
     import { loadSquareData } from "/assets/js/square-data.js";
@@ -70,6 +73,7 @@ layout: null
     const mintButton = document.getElementById("mint");
     const pickASquareDiv = document.getElementById("pick-a-square");
     const mintSelectedSquareDiv = document.getElementById("mint-selected-square");
+    const openWalletButton = document.getElementById("open-wallet-app");
     const receiptsDiv = document.getElementById("receipts");
     let squareNumber;
     let squarePersonalizations;
@@ -136,6 +140,14 @@ layout: null
       squareNumberInput.value = urlParams.get("square");
       squareNumberInput.dispatchEvent(new Event("input"));
       //document.getElementById("select-square").click(); let the customer click it, by then the personalizations will be loaded
+    }
+
+    if (openWalletButton) {
+      openWalletButton.addEventListener("click", () => {
+        if (!openWalletFromStore()) {
+          alert("No WalletConnect session found yet. Tap Connect Wallet first.");
+        }
+      });
     }
 
     // Handle mint button ///////////////////////////////////////////////////////////////////////////////////////////////
