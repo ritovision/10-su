@@ -80,7 +80,12 @@ layout: null
   </footer>
 
   <script type="module">
-    import { ensureConnected, ensureMainnetOrWarn, openWalletFromStore } from "/assets/web3/foundation.js";
+    import {
+      ensureConnected,
+      ensureMainnetOrWarn,
+      openWalletFromStore,
+      hasWalletConnectSession,
+    } from "/assets/web3/foundation.js";
 
     // Elements and state //////////////////////////////////////////////////////////////////////////////////////////////
     const squareNumberInput = document.getElementById("square-number");
@@ -211,7 +216,18 @@ layout: null
       squareNumberInput.dispatchEvent(new Event("input"));
     }
 
+    const updateOpenWalletButton = () => {
+      if (!openWalletButton) return;
+      const hasSession = hasWalletConnectSession();
+      openWalletButton.style.display = hasSession ? "inline-block" : "none";
+    };
+
     if (openWalletButton) {
+      updateOpenWalletButton();
+      window.addEventListener("su-wc-session-change", (event) => {
+        const hasSession = Boolean(event?.detail?.hasSession);
+        openWalletButton.style.display = hasSession ? "inline-block" : "none";
+      });
       openWalletButton.addEventListener("click", () => {
         if (!openWalletFromStore()) {
           alert("No WalletConnect session found yet. Tap Connect Wallet first.");
