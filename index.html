@@ -17,7 +17,8 @@ layout: null
   {% include alert-modal-head.html %}
   {% include offline-modal-head.html %}
   <link rel="stylesheet" href="/assets/modals/leaving-modal/modal.css">
-  <script src="/assets/modals/leaving-modal/leaving-modal.js"></script>
+  <script src="/assets/modals/leaving-modal/modal-core.js"></script>
+  <script src="/assets/modals/leaving-modal/link-guard.js"></script>
 </head>
 
 <body>
@@ -101,8 +102,8 @@ layout: null
           const col = (index - 1) % 100;
           const squareNumber = index + 1;
           newlyMintedList.insertAdjacentHTML("beforeend",
-            `<a class="newly-feed__item" href="https://tenthousandsu.com/square#${squareNumber}">
-              <span class="newly-feed__thumb" style="background-image:url('https://tenthousandsu.com/build/wholeSquare.png'); background-position:${-col * 10}px ${-row * 10}px;"></span>
+            `<a class="newly-feed__item" href="/square#${squareNumber}">
+              <span class="newly-feed__thumb" style="background-image:url('build/wholeSquare.png'); background-position:${-col * 10}px ${-row * 10}px;"></span>
               <p>#${squareNumber}</p>
             </a>`
           );
@@ -118,8 +119,8 @@ layout: null
           const col = (index) % 100;
           const squareNumber = index + 1;
           newlyPersonalizedList.insertAdjacentHTML("beforeend",
-            `<a class="newly-feed__item" href="https://tenthousandsu.com/square#${squareNumber}">
-              <span class="newly-feed__thumb" style="background-image:url('https://tenthousandsu.com/build/wholeSquare.png'); background-position:${-col * 10}px ${-row * 10}px;"></span>
+            `<a class="newly-feed__item" href="/square#${squareNumber}">
+              <span class="newly-feed__thumb" style="background-image:url('build/wholeSquare.png'); background-position:${-col * 10}px ${-row * 10}px;"></span>
               <p>#${squareNumber}</p>
             </a>`
           );
