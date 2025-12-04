@@ -62,10 +62,12 @@ layout: null
   <script type="module">
     import {
       ensureConnected,
-      ensureMainnetOrWarn,
+      ensureCorrectNetwork,
       openWalletFromStore,
       hasWalletConnectSession,
     } from "/assets/web3/foundation.js";
+    import { purchaseSquare } from "/assets/web3/services/primary.js";
+    import { buildTxUrl } from "/assets/web3/services/tx-links.js";
     import { attachListChooser } from "/assets/js/choosers/list-chooser.js";
     import { attachCanvasChooser } from "/assets/js/choosers/canvas-chooser.js";
     import { loadSquareData } from "/assets/js/square-data.js";
@@ -167,41 +169,26 @@ layout: null
     }
 
     // Handle mint button ///////////////////////////////////////////////////////////////////////////////////////////////
-    const mainContractABI = [
-      { "constant": false, "inputs": [{ "name": "_tokenId", "type": "uint256" }, { "name": "_newOwner", "type": "address" }], "name": "grantToken", "outputs": [], "payable": false, "stateMutability": "nonpayable", "type": "function" },
-      { "anonymous": false, "inputs": [{ "indexed": false, "name": "_nftId", "type": "uint256" }], "name": "Personalized", "type": "event" },
-      { "constant": false, "inputs": [{ "name": "_squareId", "type": "uint256" }, { "name": "_rgbData", "type": "bytes" }, { "name": "_title", "type": "string" }, { "name": "_href", "type": "string" }], "name": "personalizeSquare", "outputs": [], "payable": true, "stateMutability": "payable", "type": "function" },
-      { "anonymous": false, "inputs": [{ "indexed": true, "name": "_from", "type": "address" }, { "indexed": true, "name": "_to", "type": "address" }, { "indexed": true, "name": "_tokenId", "type": "uint256" }], "name": "Transfer", "type": "event" },
-      { "constant": false, "inputs": [{ "name": "_nftId", "type": "uint256" }], "name": "purchase", "outputs": [], "payable": true, "stateMutability": "payable", "type": "function" },
-      { "constant": true, "inputs": [{ "name": "_owner", "type": "address" }], "name": "balanceOf", "outputs": [{ "name": "", "type": "uint256" }], "payable": false, "stateMutability": "view", "type": "function" },
-      { "constant": true, "inputs": [{ "name": "_tokenId", "type": "uint256" }], "name": "ownerOf", "outputs": [{ "name": "_owner", "type": "address" }], "payable": false, "stateMutability": "view", "type": "function" },
-      { "constant": true, "inputs": [{ "name": "_owner", "type": "address" }, { "name": "_index", "type": "uint256" }], "name": "tokenOfOwnerByIndex", "outputs": [{ "name": "_tokenId", "type": "uint256" }], "payable": false, "stateMutability": "view", "type": "function" },
-    ];
-
     mintButton.addEventListener("click", async () => {
       if (!squareNumber) {
         return alert("Please enter a Square number.");
       }
-      const doSendTransaction = async ({ writeContract, waitForTransaction }) => {
+      const doSendTransaction = async (wagmi) => {
         receiptsDiv.innerHTML = "<p>Sending transaction, waiting for confirmation&hellip;</p>";
         let result;
         try {
-          result = await writeContract({
-            address: "0xE9e3F9cfc1A64DFca53614a0182CFAD56c10624F",
-            abi: mainContractABI,
-            functionName: "purchase",
-            args: [squareNumber],
-            value: "500000000000000000", // 0.5 Eth
-          });
-          const transaction = await waitForTransaction({ hash: result.hash });
-          receiptsDiv.innerHTML = `<h3>Transaction confirmed</h3><p>Transaction ID: <a target="_blank" href="https://etherscan.io/tx/${transaction.transactionHash}">${transaction.transactionHash}</a>. Next, go to <a href="https://tenthousandsu.com/personalize?square=${squareNumber}">personalize</a> to personalize your Square.</p>`;
+          result = await purchaseSquare(squareNumber, wagmi);
+          const transaction = await wagmi.waitForTransaction({ hash: result.hash });
+          const txUrl = buildTxUrl(transaction.transactionHash);
+          const linkHref = txUrl || `https://etherscan.io/tx/${transaction.transactionHash}`;
+          receiptsDiv.innerHTML = `<h3>Transaction confirmed</h3><p>Transaction ID: <a target="_blank" href="${linkHref}">${transaction.transactionHash}</a>. Next, go to <a href="https://tenthousandsu.com/personalize?square=${squareNumber}">personalize</a> to personalize your Square.</p>`;
         } catch (error) {
           console.log(error);
           return alert(error.message);
         }
       };
       await ensureConnected(async (clients) => {
-        await ensureMainnetOrWarn(clients);
+        await ensureCorrectNetwork(clients);
         await doSendTransaction(clients);
       });
     });

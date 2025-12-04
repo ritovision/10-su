@@ -98,10 +98,12 @@ layout: null
   <script type="module">
     import {
       ensureConnected,
-      ensureMainnetOrWarn,
+      ensureCorrectNetwork,
       openWalletFromStore,
       hasWalletConnectSession,
     } from "/assets/web3/foundation.js";
+    import { personalizeUnderlayBatch } from "/assets/web3/services/underlay-batch.js";
+    import { buildTxUrl } from "/assets/web3/services/tx-links.js";
 
     // Elements and state //////////////////////////////////////////////////////////////////////////////////////////////
     const topLeftSquareNumberInput = document.getElementById("top-left-square-number");
@@ -118,26 +120,6 @@ layout: null
     const openWalletButton = document.getElementById("open-wallet-app");
     const personalizeButton = document.getElementById("personalize");
     const receiptsDiv = document.getElementById("receipts");
-    const underlayContractAddress = "0x992bDEC05cD423B73085586f7DcbbDaB953E0DCd";
-    const underlayContractABI = [
-      {
-        "inputs": [
-          {
-            "components": [
-              {"internalType": "uint256", "name": "squareId", "type": "uint256"},
-              {"internalType": "bytes", "name": "rgbData", "type": "bytes"},
-              {"internalType": "string", "name": "title", "type": "string"},
-              {"internalType": "string", "name": "href", "type": "string"}
-            ],
-            "internalType": "struct SuSquaresUnderlay.Personalization[]", "name": "personalizations", "type": "tuple[]"
-          }
-        ],
-        "name": "personalizeSquareUnderlayBatch",
-        "outputs": [],
-        "stateMutability": "payable",
-        "type": "function"
-      }
-    ];
     let topLeftSquareNumber;
     let title;
     let url;
@@ -379,26 +361,22 @@ layout: null
       if (!personalizationArgs) {
         return alert("ERROR: Please perform preflight, or manually edit the preflight box and pass validation, then try again.");
       }
-      const doSendTransaction = async ({ writeContract, waitForTransaction })=>{
+      const doSendTransaction = async (wagmi)=>{
         receiptsDiv.innerHTML = "<p>Sending transaction, waiting for confirmation&hellip;</p>";
         let result;
         try {
-          result = await writeContract({
-            address: underlayContractAddress,
-            abi: underlayContractABI,
-            functionName: "personalizeSquareUnderlayBatch",
-            args: [ personalizationArgs ],
-            value: BigInt(personalizationArgs.length) * 1000000000000000n, // 0.001 Ether per Square
-          });
-          const transaction = await waitForTransaction({ hash: result.hash });
-          receiptsDiv.innerHTML = `<h3>Transaction confirmed</h3><p>Transaction ID: <a target="_blank" href="https://etherscan.io/tx/${transaction.transactionHash}">${transaction.transactionHash}</a>. Your image will show on the Su Squares homepage, which <a target="_blank" href="https://github.com/su-squares/tenthousandsu.com/actions/workflows/load-from-blockchain.yml">refreshes hourly</a>.`;
+          result = await personalizeUnderlayBatch(personalizationArgs, wagmi);
+          const transaction = await wagmi.waitForTransaction({ hash: result.hash });
+          const txUrl = buildTxUrl(transaction.transactionHash);
+          const linkHref = txUrl || `https://etherscan.io/tx/${transaction.transactionHash}`;
+          receiptsDiv.innerHTML = `<h3>Transaction confirmed</h3><p>Transaction ID: <a target="_blank" href="${linkHref}">${transaction.transactionHash}</a>. Your image will show on the Su Squares homepage, which <a target="_blank" href="https://github.com/su-squares/tenthousandsu.com/actions/workflows/load-from-blockchain.yml">refreshes hourly</a>.`;
         } catch (error) {
           console.log(error);
           return alert(error.message);
         }
       };
       await ensureConnected(async (clients) => {
-        await ensureMainnetOrWarn(clients);
+        await ensureCorrectNetwork(clients);
         await doSendTransaction(clients);
       });
     });
