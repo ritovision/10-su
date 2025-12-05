@@ -87,7 +87,7 @@ layout: null
       hasWalletConnectSession,
     } from "/assets/web3/foundation.js";
     import { personalizeUnderlay } from "/assets/web3/services/underlay.js";
-    import { buildTxUrl } from "/assets/web3/services/tx-links.js";
+    import { buildTxUrl } from "/assets/web3/services/explorer-links.js";
 
     // Elements and state //////////////////////////////////////////////////////////////////////////////////////////////
     const squareNumberInput = document.getElementById("square-number");
@@ -243,8 +243,10 @@ layout: null
           result = await personalizeUnderlay({ squareId: squareNumber, imagePixelsHex, title, url }, wagmi);
           const transaction = await wagmi.waitForTransaction({ hash: result.hash });
           const txUrl = buildTxUrl(transaction.transactionHash);
-          const linkHref = txUrl || `https://etherscan.io/tx/${transaction.transactionHash}`;
-          receiptsDiv.innerHTML = `<h3>Transaction confirmed</h3><p>Transaction ID: <a target="_blank" href="${linkHref}">${transaction.transactionHash}</a>. Your image will show on the Su Squares homepage, which <a target="_blank" href="https://github.com/su-squares/tenthousandsu.com/actions/workflows/load-from-blockchain.yml">refreshes hourly</a>.`;
+          const txLink = txUrl
+            ? `<a target="_blank" href="${txUrl}">${transaction.transactionHash}</a>`
+            : transaction.transactionHash;
+          receiptsDiv.innerHTML = `<h3>Transaction confirmed</h3><p>Transaction ID: ${txLink}. Your image will show on the Su Squares homepage, which <a target="_blank" href="https://github.com/su-squares/tenthousandsu.com/actions/workflows/load-from-blockchain.yml">refreshes hourly</a>.`;
         } catch (error) {
           console.log(error);
           return alert(error.message);

@@ -48,7 +48,7 @@ layout: null
     <h2>Location</h2>
     <div class="square-location">
       <div class="square-location__canvas">
-        <img id="theImage" class="square-location__image" src="build/wholeSquare.png" alt="All Su Squares">
+        <img id="theImage" class="square-location__image" src="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" alt="All Su Squares">
         <img id="arrow" class="square-location__arrow" src="assets/images/dr.png" alt="Location">
       </div>
     </div>
@@ -70,18 +70,31 @@ layout: null
       United States.
     </small>
   </footer>
-  <script>
+  <script type="module">
+    import { buildBlockUrl, buildTokenUrl, getExplorerName } from '/assets/web3/services/explorer-links.js';
+    import { getWeb3Config } from '/assets/web3/config/index.js';
+
+    document.addEventListener("DOMContentLoaded", () => {
+    const runtimeCfg = window.suWeb3 || window.SU_WEB3 || {};
+    const runtimeChain =
+      (runtimeCfg.chain || runtimeCfg.CHAIN || runtimeCfg.network || runtimeCfg.NETWORK || "mainnet").toString().toLowerCase();
+    const runtimeAssetBases = runtimeCfg.assetBases || {};
+    const assetBase = String(runtimeAssetBases[runtimeChain] || "/build").replace(/\/+$/, "");
+    const assetPath = (rel) => `${assetBase}/${String(rel).replace(/^\/+/, "")}`;
+
     // Get URL fragment
     const squareNumber = parseInt(window.location.hash.substring(1));
-    const personalizations = fetch('build/squarePersonalizations.json').then(response => response.json());
-    const extras = fetch('build/squareExtra.json').then(response => response.json());
-    const CONTRACT_ADDRESS = '0xE9e3F9cfc1A64DFca53614a0182CFAD56c10624F';
-    const ETHERSCAN_BASE = 'https://etherscan.io';
+    const personalizations = fetch(assetPath('squarePersonalizations.json')).then(response => response.json());
+    const extras = fetch(assetPath('squareExtra.json')).then(response => response.json());
+    const explorerName = getExplorerName();
+    const { contracts } = getWeb3Config();
 
     Promise.all([personalizations, extras]).then(([personalizations, extras]) => {
       // Each personalization is [title, href] or null
       // Each extra is [mintedBlock, updatedBlock, mainIsPersonalized, version] or null
       // Arrays are zero indexed, but the first Su Square number is 1!
+
+      const personalization = personalizations[squareNumber - 1];
 
       const elSquareNumber = document.getElementById("square-number");
       elSquareNumber.innerText = squareNumber;
@@ -92,36 +105,56 @@ layout: null
       const isMinted = Boolean(mintedData);
       if (isMinted) {
         const mintedBlock = mintedData[0];
-        elMinted.innerHTML = `<a href="${ETHERSCAN_BASE}/block/${mintedBlock}" target="_blank" rel="noopener">Block ${mintedBlock}</a>`;
-        elViewEtherscan.href = `${ETHERSCAN_BASE}/token/${CONTRACT_ADDRESS}?a=${squareNumber}`;
-        elViewEtherscan.style.display = 'inline-block';
+        const blockUrl = buildBlockUrl(mintedBlock);
+        elMinted.innerHTML = blockUrl
+          ? `<a href="${blockUrl}" target="_blank" rel="noopener">Block ${mintedBlock}</a>`
+          : `Block ${mintedBlock}`;
+
+        const tokenUrl = buildTokenUrl(contracts.primary, squareNumber);
+        if (tokenUrl) {
+          elViewEtherscan.href = tokenUrl;
+          elViewEtherscan.textContent = `View NFT on ${explorerName}`;
+          elViewEtherscan.style.display = 'inline-block';
+        }
       } else {
         elMinted.innerText = 'Not minted';
         elViewEtherscan.style.display = 'none';
       }
 
       const elPersonalized = document.getElementById('personalized');
-      if (isMinted && mintedData[2]) {
-        const personalizedBlock = mintedData[1];
-        elPersonalized.innerHTML = `<a href="${ETHERSCAN_BASE}/block/${personalizedBlock}" target="_blank" rel="noopener">Block ${personalizedBlock}</a>`;
+      const hasPersonalization = Boolean(personalization && (personalization[0] || personalization[1])) || Boolean(mintedData && mintedData[2]);
+      if (isMinted && hasPersonalization) {
+        const personalizedBlock = mintedData ? mintedData[1] : null;
+        if (personalizedBlock) {
+          const personalizedBlockUrl = buildBlockUrl(personalizedBlock);
+          elPersonalized.innerHTML = personalizedBlockUrl
+            ? `<a href="${personalizedBlockUrl}" target="_blank" rel="noopener">Block ${personalizedBlock}</a>`
+            : `Block ${personalizedBlock}`;
+        } else {
+          elPersonalized.innerText = 'Personalized';
+        }
       } else {
         elPersonalized.innerText = 'Not personalized';
       }
 
-      const personalization = personalizations[squareNumber - 1];
       const elTitle = document.getElementById('title');
       elTitle.innerText = personalization ? personalization[0] : 'Not personalized';
 
       const elLink = document.getElementById('link');
       const hasPersonalizationLink = isMinted && personalization && personalization[1];
       if (hasPersonalizationLink) {
-        const href = personalization[1];
-        elLink.innerHTML = `<a id="square-out-link" href="${href}" target="_blank" rel="noopener">${href}</a>`;
+        const hrefRaw = personalization[1];
+        const normalizedHref = window.suNormalizeHref ? window.suNormalizeHref(hrefRaw) : hrefRaw;
+        elLink.innerHTML = normalizedHref
+          ? `<a id="square-out-link" href="${normalizedHref}" target="_blank" rel="noopener">${hrefRaw}</a>`
+          : hrefRaw;
         const guardedAnchor = document.getElementById('square-out-link');
-        if (window.SuLeavingLinkGuard && typeof window.SuLeavingLinkGuard.guardLink === 'function') {
-          window.SuLeavingLinkGuard.guardLink(guardedAnchor);
-        } else if (window.SuLeavingModal && typeof window.SuLeavingModal.gateAnchor === 'function') {
-          window.SuLeavingModal.gateAnchor(guardedAnchor);
+        if (guardedAnchor) {
+          if (window.SuLeavingLinkGuard && typeof window.SuLeavingLinkGuard.guardLink === 'function') {
+            window.SuLeavingLinkGuard.guardLink(guardedAnchor);
+          } else if (window.SuLeavingModal && typeof window.SuLeavingModal.gateAnchor === 'function') {
+            window.SuLeavingModal.gateAnchor(guardedAnchor);
+          }
         }
       } else {
         elLink.innerText = 'Not personalized';
@@ -133,7 +166,7 @@ layout: null
       const row = Math.floor((squareNumber - 1) / 100); // 0 indexed
       const col = (squareNumber - 1) % 100; // 0 indexed
       const elImage = document.getElementById('image');
-      elImage.style.backgroundImage = 'url("build/wholeSquare.png")';
+      elImage.style.backgroundImage = `url("${assetPath('wholeSquare.png')}")`;
       elImage.style.backgroundPosition = `-${col * 10}px -${row * 10}px`;
       elImage.style.height = '10px';
       elImage.style.width = '10px';
@@ -144,6 +177,10 @@ layout: null
       // Set arrow location, based on quadrant
       const elArrow = document.getElementById('arrow');
       const elCanvas = document.querySelector('.square-location__canvas');
+      const mapImage = document.getElementById('theImage');
+      if (mapImage) {
+        mapImage.src = assetPath('wholeSquare.png');
+      }
 
       const updateArrowPosition = () => {
         // Get actual rendered size and calculate scale factor
@@ -201,7 +238,7 @@ layout: null
       // Add wholeSquare to canvas
       const context = canvas.getContext('2d');
       const image = new Image();
-      image.src = 'build/wholeSquare.png';
+      image.src = assetPath('wholeSquare.png');
       image.onload = function () {
         context.drawImage(image, col * 10, row * 10, 10, 10, 0, 0, 10, 10);
         // Get pixels
@@ -250,6 +287,7 @@ layout: null
         window.getSelection().removeAllRanges();
       });
     });
+  });
   </script>
   <script type="module" src="/assets/js/square-lookup.js"></script>
 </body>

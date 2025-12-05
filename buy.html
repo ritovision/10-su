@@ -67,7 +67,7 @@ layout: null
       hasWalletConnectSession,
     } from "/assets/web3/foundation.js";
     import { purchaseSquare } from "/assets/web3/services/primary.js";
-    import { buildTxUrl } from "/assets/web3/services/tx-links.js";
+    import { buildTxUrl } from "/assets/web3/services/explorer-links.js";
     import { attachListChooser } from "/assets/js/choosers/list-chooser.js";
     import { attachCanvasChooser } from "/assets/js/choosers/canvas-chooser.js";
     import { loadSquareData } from "/assets/js/square-data.js";
@@ -180,8 +180,10 @@ layout: null
           result = await purchaseSquare(squareNumber, wagmi);
           const transaction = await wagmi.waitForTransaction({ hash: result.hash });
           const txUrl = buildTxUrl(transaction.transactionHash);
-          const linkHref = txUrl || `https://etherscan.io/tx/${transaction.transactionHash}`;
-          receiptsDiv.innerHTML = `<h3>Transaction confirmed</h3><p>Transaction ID: <a target="_blank" href="${linkHref}">${transaction.transactionHash}</a>. Next, go to <a href="https://tenthousandsu.com/personalize?square=${squareNumber}">personalize</a> to personalize your Square.</p>`;
+          const txLink = txUrl
+            ? `<a target="_blank" href="${txUrl}">${transaction.transactionHash}</a>`
+            : transaction.transactionHash;
+          receiptsDiv.innerHTML = `<h3>Transaction confirmed</h3><p>Transaction ID: ${txLink}. Next, go to <a href="https://tenthousandsu.com/personalize?square=${squareNumber}">personalize</a> to personalize your Square.</p>`;
         } catch (error) {
           console.log(error);
           return alert(error.message);
