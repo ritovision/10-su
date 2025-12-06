@@ -2,8 +2,6 @@
 exclude:
   - erc721/
   - vendor/
-  - Gemfile
-  - Gemfile.lock
   - README.md
   - nodejs/
   - nul
