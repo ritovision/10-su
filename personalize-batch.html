@@ -5,6 +5,7 @@ layout: null
 <html lang="en" class="personalize-page">
 
 <head>
+  <script>{% include baseurl.js %}</script>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   {% include pwa-meta-tags.html %}
@@ -102,11 +103,11 @@ layout: null
       ensureCorrectNetwork,
       openWalletFromStore,
       hasWalletConnectSession,
-    } from "/assets/web3/foundation.js";
-    import { createTxFixture } from "/assets/web3/tx/index.js";
-    import { getWeb3Config } from "/assets/web3/config.js";
-    import { personalizeUnderlayBatch } from "/assets/web3/services/underlay-batch.js";
-    import { buildTxUrl } from "/assets/web3/services/explorer-links.js";
+    } from "{{ site.baseurl }}/assets/web3/foundation.js";
+    import { createTxFixture } from "{{ site.baseurl }}/assets/web3/tx/index.js";
+    import { getWeb3Config } from "{{ site.baseurl }}/assets/web3/config.js";
+    import { personalizeUnderlayBatch } from "{{ site.baseurl }}/assets/web3/services/underlay-batch.js";
+    import { buildTxUrl } from "{{ site.baseurl }}/assets/web3/services/explorer-links.js";
 
     // Elements and state //////////////////////////////////////////////////////////////////////////////////////////////
     const topLeftSquareNumberInput = document.getElementById("top-left-square-number");
@@ -407,7 +408,7 @@ layout: null
       });
     });
   </script>
-  <script src="/assets/js/pwa-init.js"></script>
+  <script src="{{ site.baseurl }}/assets/js/pwa-init.js"></script>
 </body>
 
 </html>

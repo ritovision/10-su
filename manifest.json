@@ -2,6 +2,8 @@
   "name": "Su Squares",
   "short_name": "10kSu",
   "description": "Collect and personalize your Su Squares on the blockchain",
+  "lang": "en",
+  "dir": "ltr",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#2d3c96",
@@ -18,6 +20,23 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Personalize your square",
+      "short_name": "Personalize",
+      "url": "/personalize"
+    },
+    {
+      "name": "Mint a new square",
+      "short_name": "Mint",
+      "url": "/mint"
+    },
+    {
+      "name": "See the Homepage",
+      "short_name": "Home",
+      "url": "/"
     }
   ]
 }

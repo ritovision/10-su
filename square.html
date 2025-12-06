@@ -5,6 +5,7 @@ layout: null
 <html lang="en">
 
 <head>
+  <script>{% include baseurl.js %}</script>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   {% include pwa-meta-tags.html %}
@@ -13,9 +14,9 @@ layout: null
   <link rel="stylesheet" href="assets/css/main.css">
   <link rel="stylesheet" href="assets/css/square.css">
   <link rel="stylesheet" href="assets/css/chooser.css">
-  <link rel="stylesheet" href="/assets/modals/leaving-modal/modal.css">
-  <script src="/assets/modals/leaving-modal/modal-core.js"></script>
-  <script src="/assets/modals/leaving-modal/link-guard.js"></script>
+  <link rel="stylesheet" href="{{ site.baseurl }}/assets/modals/leaving-modal/modal.css">
+  <script src="{{ site.baseurl }}/assets/modals/leaving-modal/modal-core.js"></script>
+  <script src="{{ site.baseurl }}/assets/modals/leaving-modal/link-guard.js"></script>
   {% include nav-menu-head.html %}
   {% include alert-modal-head.html %}
   {% include offline-modal-head.html %}
@@ -72,15 +73,19 @@ layout: null
     </small>
   </footer>
   <script type="module">
-    import { buildBlockUrl, buildTokenUrl, getExplorerName } from '/assets/web3/services/explorer-links.js';
-    import { getWeb3Config } from '/assets/web3/config/index.js';
+    import { buildBlockUrl, buildTokenUrl, getExplorerName } from "{{ site.baseurl }}/assets/web3/services/explorer-links.js";
+    import { getWeb3Config } from "{{ site.baseurl }}/assets/web3/config/index.js";
 
     document.addEventListener("DOMContentLoaded", () => {
+    const baseurl = window.SITE_BASEURL || '';
     const runtimeCfg = window.suWeb3 || window.SU_WEB3 || {};
     const runtimeChain =
       (runtimeCfg.chain || runtimeCfg.CHAIN || runtimeCfg.network || runtimeCfg.NETWORK || "mainnet").toString().toLowerCase();
     const runtimeAssetBases = runtimeCfg.assetBases || {};
-    const assetBase = String(runtimeAssetBases[runtimeChain] || "/build").replace(/\/+$/, "");
+    let assetBase = String(runtimeAssetBases[runtimeChain] || "/build").replace(/\/+$/, "");
+    if (baseurl && !assetBase.startsWith(baseurl)) {
+      assetBase = baseurl + assetBase;
+    }
     const assetPath = (rel) => `${assetBase}/${String(rel).replace(/^\/+/, "")}`;
 
     // Get URL fragment
@@ -290,8 +295,8 @@ layout: null
     });
   });
   </script>
-  <script type="module" src="/assets/js/square-lookup.js"></script>
-  <script src="/assets/js/pwa-init.js"></script>
+  <script type="module" src="{{ site.baseurl }}/assets/js/square-lookup.js"></script>
+  <script src="{{ site.baseurl }}/assets/js/pwa-init.js"></script>
 </body>
 
 </html>
