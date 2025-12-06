@@ -1,0 +1,17 @@
+# Site settings
+baseurl: /10-su/
+url: https://ritovision.github.io
+
+# Exclude directories from Jekyll processing
+exclude:
+  - vendor/
+  - cmds
+  - README.md
+  - nodejs/
+  - nul
+  - NUL
+
+
+# Plugins
+plugins:
+  - jekyll-sitemap
