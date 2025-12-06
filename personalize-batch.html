@@ -11,6 +11,7 @@ layout: null
   <link rel="canonical" href="https://tenthousandsu.com/personalize-batch" />
   <link rel="stylesheet" href="assets/css/main.css">
   <link rel="stylesheet" href="assets/css/personalize.css">
+  <link rel="stylesheet" href="assets/web3/tx/styles.css">
   {% include nav-menu-head.html %}
   {% include alert-modal-head.html %}
   {% include offline-modal-head.html %}
@@ -85,8 +86,7 @@ layout: null
       <button id="personalize" class="btn btn-lg">Personalize</button>
     </div>
 
-    <div id="receipts">
-    </div>
+    <div id="tx-fixture"></div>
   </article>
 
   <footer>
@@ -102,6 +102,8 @@ layout: null
       openWalletFromStore,
       hasWalletConnectSession,
     } from "/assets/web3/foundation.js";
+    import { createTxFixture } from "/assets/web3/tx/index.js";
+    import { getWeb3Config } from "/assets/web3/config.js";
     import { personalizeUnderlayBatch } from "/assets/web3/services/underlay-batch.js";
     import { buildTxUrl } from "/assets/web3/services/explorer-links.js";
 
@@ -119,7 +121,13 @@ layout: null
     const preflightStatusSpan = document.getElementById("preflight-status");
     const openWalletButton = document.getElementById("open-wallet-app");
     const personalizeButton = document.getElementById("personalize");
-    const receiptsDiv = document.getElementById("receipts");
+    const txFixtureDiv = document.getElementById("tx-fixture");
+    const { pricing } = getWeb3Config();
+    const txUi = createTxFixture({
+      target: txFixtureDiv,
+      pricing,
+      title: "Personalization status",
+    });
     let topLeftSquareNumber;
     let title;
     let url;
@@ -361,20 +369,28 @@ layout: null
       if (!personalizationArgs) {
         return alert("ERROR: Please perform preflight, or manually edit the preflight box and pass validation, then try again.");
       }
+      txUi.startProcessing("Sending personalization batch. Confirm in your wallet to continue.");
       const doSendTransaction = async (wagmi)=>{
-        receiptsDiv.innerHTML = "<p>Sending transaction, waiting for confirmation&hellip;</p>";
+        txUi.setWalletContext({
+          hasSession: hasWalletConnectSession(),
+          isWalletConnect: wagmi?.getAccount?.()?.connector?.id === "walletConnect",
+        });
         let result;
         try {
           result = await personalizeUnderlayBatch(personalizationArgs, wagmi);
+          const pendingUrl = buildTxUrl(result.hash);
+          txUi.addPending(result.hash, pendingUrl);
           const transaction = await wagmi.waitForTransaction({ hash: result.hash });
           const txUrl = buildTxUrl(transaction.transactionHash);
-          const txLink = txUrl
-            ? `<a target="_blank" href="${txUrl}">${transaction.transactionHash}</a>`
-            : transaction.transactionHash;
-          receiptsDiv.innerHTML = `<h3>Transaction confirmed</h3><p>Transaction ID: ${txLink}. Your image will show on the Su Squares homepage, which <a target="_blank" href="https://github.com/su-squares/tenthousandsu.com/actions/workflows/load-from-blockchain.yml">refreshes hourly</a>.`;
+          txUi.markSuccess(
+            transaction.transactionHash,
+            txUrl,
+            "Transaction confirmed. Your image will show on the Su Squares homepage, which refreshes hourly."
+          );
         } catch (error) {
           console.log(error);
-          return alert(error.message);
+          txUi.markError(error?.message || "Transaction failed");
+          return alert(error?.message || "Transaction failed");
         }
       };
       await ensureConnected(async (clients) => {
