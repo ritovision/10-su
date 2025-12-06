@@ -5,6 +5,7 @@ layout: null
 <html lang="en">
 
 <head>
+  <script>window.SITE_BASEURL = "{{ site.baseurl }}";</script>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   {% include pwa-meta-tags.html %}
@@ -17,9 +18,9 @@ layout: null
   {% include nav-menu-head.html %}
   {% include alert-modal-head.html %}
   {% include offline-modal-head.html %}
-  <link rel="stylesheet" href="/assets/modals/leaving-modal/modal.css">
-  <script src="/assets/modals/leaving-modal/modal-core.js"></script>
-  <script src="/assets/modals/leaving-modal/link-guard.js"></script>
+  <link rel="stylesheet" href="{{ site.baseurl }}/assets/modals/leaving-modal/modal.css">
+  <script src="{{ site.baseurl }}/assets/modals/leaving-modal/modal-core.js"></script>
+  <script src="{{ site.baseurl }}/assets/modals/leaving-modal/link-guard.js"></script>
 </head>
 
 <body>
@@ -27,11 +28,13 @@ layout: null
 
   <article>
     <h1 class="home-title">The first <span class="no-break">ERC-721</span> NFT</h1>
-    <p>Click an empty square below to mint an available Su Square (0.5 ETH). Clicking an already minted and personalized one will activate its hyperlink.</p>
+    <p>Click an empty square below to mint an available Su Square (0.5 ETH). Clicking an already minted and personalized
+      one will activate its hyperlink.</p>
     <p class="mobile-hint">On mobile, zoom in and scroll</p>
     <a id="wheretogo" class="map-container" href="#" target="_blank">
       <div class="map-wrapper">
-        <img id="theImage" class="map-image" src="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" alt="All Su Squares">
+        <img id="theImage" class="map-image"
+          src="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" alt="All Su Squares">
         <div id="position" class="map-position"></div>
         <div id="tooltip" class="map-tooltip"></div>
         <div id="electric-fence" class="map-fence"></div>
@@ -65,11 +68,15 @@ layout: null
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       try {
+        const baseurl = window.SITE_BASEURL || '';
         const runtimeCfg = window.suWeb3 || window.SU_WEB3 || {};
         const runtimeChain =
           (runtimeCfg.chain || runtimeCfg.CHAIN || runtimeCfg.network || runtimeCfg.NETWORK || "mainnet").toString().toLowerCase();
         const runtimeAssetBases = runtimeCfg.assetBases || {};
-        const assetBase = String(runtimeAssetBases[runtimeChain] || "/build").replace(/\/+$/, "");
+        let assetBase = String(runtimeAssetBases[runtimeChain] || "/build").replace(/\/+$/, "");
+        if (baseurl && !assetBase.startsWith(baseurl)) {
+          assetBase = baseurl + assetBase;
+        }
         const assetPath = (rel) => `${assetBase}/${String(rel).replace(/^\/+/, "")}`;
 
         const normalizeHref = window.suNormalizeHref || ((href) => href); // fallback if helper not loaded
@@ -101,14 +108,14 @@ layout: null
             squarePersonalizations = personalizations; /* [title, href] or null */
             squareExtra = extra; /* [mintedBlock, updatedBlock, mainIsPersonalized, version */
 
-          // Start fence animation
-          lightUpFence(new Set([1]));
+            // Start fence animation
+            lightUpFence(new Set([1]));
 
-          // Show newly minted and personalized Squares
-          const newlyMintedSection = document.getElementById("newly-minted");
-          const newlyPersonalizedSection = document.getElementById("newly-personalized");
-          const newlyMintedList = newlyMintedSection.querySelector(".newly-feed__items");
-          const newlyPersonalizedList = newlyPersonalizedSection.querySelector(".newly-feed__items");
+            // Show newly minted and personalized Squares
+            const newlyMintedSection = document.getElementById("newly-minted");
+            const newlyPersonalizedSection = document.getElementById("newly-personalized");
+            const newlyMintedList = newlyMintedSection.querySelector(".newly-feed__items");
+            const newlyPersonalizedList = newlyPersonalizedSection.querySelector(".newly-feed__items");
             const mostRecentMintedSquares = squareExtra
               .map((extraData, index) => [index, extraData])
               .filter(([index, extraData]) => extraData !== null)
@@ -151,190 +158,190 @@ layout: null
             console.error("Failed to load square data", error);
           });
 
-    const GRID_DIMENSION = 100;
+        const GRID_DIMENSION = 100;
 
-      function getCellSize() {
-        const rect = document.getElementById("theImage").getBoundingClientRect();
-        return rect.width ? rect.width / GRID_DIMENSION : 10;
-      }
-
-    function setPosition(squareNumber) {
-      positionSquareNumber = squareNumber;
-      const positionDiv = document.getElementById("position");
-      const tooltipDiv = document.getElementById("tooltip");
-      hasActiveSelection = true;
-      if (!whereToGoAnchor) {
-        return;
-      }
-      const cellSize = getCellSize();
-      const col = (squareNumber - 1) % GRID_DIMENSION;
-      const row = Math.floor((squareNumber - 1) / GRID_DIMENSION);
-
-        const normalizedHref = normalizeHref(squarePersonalizations[squareNumber - 1]?.[1]);
-
-      if (!squarePersonalizations[squareNumber - 1]) {
-        document.getElementById("theImage").style.cursor = "pointer";
-        tooltipDiv.textContent = "Square #" + squareNumber + " is available for sale, click to buy.";
-        whereToGoAnchor.href = "buy?square=" + squareNumber;
-      } else if (!squarePersonalizations[squareNumber - 1][0] && !squarePersonalizations[squareNumber - 1][1]) {
-        document.getElementById("theImage").style.cursor = "not-allowed";
-        tooltipDiv.textContent = "Square #" + squareNumber + " WAS PURCHASED BUT NOT YET PERSONALIZED";
-        whereToGoAnchor.removeAttribute("href");
-      } else {
-        document.getElementById("theImage").style.cursor = "pointer";
-        tooltipDiv.textContent = "Square #" + squareNumber + " " + squarePersonalizations[squareNumber - 1][0];
-        if (normalizedHref) {
-          whereToGoAnchor.href = normalizedHref;
-        } else {
-          whereToGoAnchor.removeAttribute("href");
+        function getCellSize() {
+          const rect = document.getElementById("theImage").getBoundingClientRect();
+          return rect.width ? rect.width / GRID_DIMENSION : 10;
         }
-      }
 
-      positionDiv.style.width = cellSize + "px";
-      positionDiv.style.height = cellSize + "px";
-      positionDiv.style.left = (col * cellSize) + "px";
-      positionDiv.style.top = (row * cellSize) + "px";
-      positionDiv.style.display = "block";
-
-      tooltipDiv.style.left = positionDiv.style.left;
-      tooltipDiv.style.top = (row * cellSize + cellSize * 3) + "px";
-      tooltipDiv.style.display = "block";
-    }
-
-      window.addEventListener("resize", () => {
-        if (document.getElementById("tooltip").style.display === "block") {
-          setPosition(positionSquareNumber);
-        }
-      });
-
-    function clearSelection() {
-      const positionDiv = document.getElementById("position");
-      const tooltipDiv = document.getElementById("tooltip");
-      positionDiv.style.display = "none";
-      tooltipDiv.style.display = "none";
-      hasActiveSelection = false;
-      if (whereToGoAnchor) {
-        whereToGoAnchor.removeAttribute("href");
-      }
-    }
-
-      document.getElementById("theImage").addEventListener("mousemove", (e) => {
-        const theImage = document.getElementById("theImage");
-        const rect = theImage.getBoundingClientRect(); // Get the bounding rectangle of the image
-        const cellSize = getCellSize();
-        const x = Math.min(Math.max(Math.floor((e.clientX - rect.left) / cellSize), 0), GRID_DIMENSION - 1); // Adjust by element's left position
-        const y = Math.min(Math.max(Math.floor((e.clientY - rect.top) / cellSize), 0), GRID_DIMENSION - 1); // Adjust by element's top position
-        const squareNumber = x + y * GRID_DIMENSION + 1;
-        setPosition(squareNumber);
-      });
-      document.getElementById("theImage").addEventListener("mouseleave", clearSelection);
-
-      document.addEventListener("keydown", (e) => {
-        const key = e.key.toLowerCase();
-        if (key === "w" || key === "," || key === "arrowup") {
-          if (positionSquareNumber > GRID_DIMENSION) setPosition(positionSquareNumber - GRID_DIMENSION);
-          e.preventDefault();
-        } else if (key === "a" || key === "arrowleft") {
-          if (positionSquareNumber % GRID_DIMENSION !== 1) setPosition(positionSquareNumber - 1);
-        } else if (key === "s" || key === "o" || key === "arrowdown") {
-          if (positionSquareNumber <= GRID_DIMENSION * (GRID_DIMENSION - 1)) setPosition(positionSquareNumber + GRID_DIMENSION);
-          e.preventDefault();
-        } else if (key === "d" || key === "e" || key === "arrowright") {
-          if (positionSquareNumber % GRID_DIMENSION !== 0) setPosition(positionSquareNumber + 1);
-        } else if (key === "enter") {
-          if (hasActiveSelection && whereToGoAnchor && whereToGoAnchor.hasAttribute("href")) {
-            whereToGoAnchor.click();
+        function setPosition(squareNumber) {
+          positionSquareNumber = squareNumber;
+          const positionDiv = document.getElementById("position");
+          const tooltipDiv = document.getElementById("tooltip");
+          hasActiveSelection = true;
+          if (!whereToGoAnchor) {
+            return;
           }
-        }
-      });
+          const cellSize = getCellSize();
+          const col = (squareNumber - 1) % GRID_DIMENSION;
+          const row = Math.floor((squareNumber - 1) / GRID_DIMENSION);
 
-    function handleWhereToGoClick(event) {
-      if (!whereToGoAnchor) {
-        return;
-      }
+          const normalizedHref = normalizeHref(squarePersonalizations[squareNumber - 1]?.[1]);
 
-      const href = whereToGoAnchor.getAttribute("href");
-      if (!href || href === "#") {
-        return;
-      }
-
-      const modal = window.SuLeavingModal;
-      if (!modal || typeof modal.shouldWarnForUrl !== "function" || typeof modal.show !== "function") {
-        return;
-      }
-
-      let destination;
-      try {
-        destination = new URL(href, window.location.href);
-      } catch (error) {
-        return;
-      }
-
-      if (!modal.shouldWarnForUrl(destination)) {
-        return;
-      }
-
-      event.preventDefault();
-      modal.show(destination, whereToGoAnchor.getAttribute("target") || "_self");
-    }
-
-      if (whereToGoAnchor) {
-        whereToGoAnchor.addEventListener("click", handleWhereToGoClick);
-      }
-
-      function lightUpFence(edge) {
-        litUpEdge.forEach(s => {
-          const element = document.getElementById("electric-fence-" + s);
-          if (element && element.parentNode) {
-            element.parentNode.removeChild(element);
-          }
-        });
-        litUpEdge.clear();
-        let nextEdge = new Set();
-        edge.forEach((square) => {
-          wasEverLitUp.add(square);
-          const element = document.createElement("div");
-          element.id = "electric-fence-" + square;
-          element.style.pointerEvents = "none";
-          element.style.position = "absolute";
-          element.style.left = ((square - 1) % GRID_DIMENSION) + "%";
-          element.style.top = Math.floor((square - 1) / GRID_DIMENSION) + "%";
-          element.style.width = "1%";
-          element.style.height = "1%";
-          element.style.background = "#ffd700";
-          element.style.opacity = "0.25";
-          document.getElementById("electric-fence").appendChild(element);
-          if (squarePersonalizations[square - 1] !== null) {
-            litUpEdge.add(square);
-            if (square > GRID_DIMENSION && !wasEverLitUp.has(square - GRID_DIMENSION)) {
-              nextEdge.add(square - GRID_DIMENSION);
-            }
-            if (square <= GRID_DIMENSION * (GRID_DIMENSION - 1) && !wasEverLitUp.has(square + GRID_DIMENSION)) {
-              nextEdge.add(square + GRID_DIMENSION);
-            }
-            if (square % GRID_DIMENSION != 1 && !wasEverLitUp.has(square - 1)) {
-              nextEdge.add(square - 1);
-            }
-            if (square % GRID_DIMENSION != 0 && !wasEverLitUp.has(square + 1)) {
-              nextEdge.add(square + 1);
-            }
+          if (!squarePersonalizations[squareNumber - 1]) {
+            document.getElementById("theImage").style.cursor = "pointer";
+            tooltipDiv.textContent = "Square #" + squareNumber + " is available for sale, click to buy.";
+            whereToGoAnchor.href = "buy?square=" + squareNumber;
+          } else if (!squarePersonalizations[squareNumber - 1][0] && !squarePersonalizations[squareNumber - 1][1]) {
+            document.getElementById("theImage").style.cursor = "not-allowed";
+            tooltipDiv.textContent = "Square #" + squareNumber + " WAS PURCHASED BUT NOT YET PERSONALIZED";
+            whereToGoAnchor.removeAttribute("href");
           } else {
-            fence.add(square);
+            document.getElementById("theImage").style.cursor = "pointer";
+            tooltipDiv.textContent = "Square #" + squareNumber + " " + squarePersonalizations[squareNumber - 1][0];
+            if (normalizedHref) {
+              whereToGoAnchor.href = normalizedHref;
+            } else {
+              whereToGoAnchor.removeAttribute("href");
+            }
+          }
+
+          positionDiv.style.width = cellSize + "px";
+          positionDiv.style.height = cellSize + "px";
+          positionDiv.style.left = (col * cellSize) + "px";
+          positionDiv.style.top = (row * cellSize) + "px";
+          positionDiv.style.display = "block";
+
+          tooltipDiv.style.left = positionDiv.style.left;
+          tooltipDiv.style.top = (row * cellSize + cellSize * 3) + "px";
+          tooltipDiv.style.display = "block";
+        }
+
+        window.addEventListener("resize", () => {
+          if (document.getElementById("tooltip").style.display === "block") {
+            setPosition(positionSquareNumber);
           }
         });
-        if (nextEdge.size > 0) {
-          setTimeout(() => {
-            lightUpFence(nextEdge);
-          }, 25);
+
+        function clearSelection() {
+          const positionDiv = document.getElementById("position");
+          const tooltipDiv = document.getElementById("tooltip");
+          positionDiv.style.display = "none";
+          tooltipDiv.style.display = "none";
+          hasActiveSelection = false;
+          if (whereToGoAnchor) {
+            whereToGoAnchor.removeAttribute("href");
+          }
         }
+
+        document.getElementById("theImage").addEventListener("mousemove", (e) => {
+          const theImage = document.getElementById("theImage");
+          const rect = theImage.getBoundingClientRect(); // Get the bounding rectangle of the image
+          const cellSize = getCellSize();
+          const x = Math.min(Math.max(Math.floor((e.clientX - rect.left) / cellSize), 0), GRID_DIMENSION - 1); // Adjust by element's left position
+          const y = Math.min(Math.max(Math.floor((e.clientY - rect.top) / cellSize), 0), GRID_DIMENSION - 1); // Adjust by element's top position
+          const squareNumber = x + y * GRID_DIMENSION + 1;
+          setPosition(squareNumber);
+        });
+        document.getElementById("theImage").addEventListener("mouseleave", clearSelection);
+
+        document.addEventListener("keydown", (e) => {
+          const key = e.key.toLowerCase();
+          if (key === "w" || key === "," || key === "arrowup") {
+            if (positionSquareNumber > GRID_DIMENSION) setPosition(positionSquareNumber - GRID_DIMENSION);
+            e.preventDefault();
+          } else if (key === "a" || key === "arrowleft") {
+            if (positionSquareNumber % GRID_DIMENSION !== 1) setPosition(positionSquareNumber - 1);
+          } else if (key === "s" || key === "o" || key === "arrowdown") {
+            if (positionSquareNumber <= GRID_DIMENSION * (GRID_DIMENSION - 1)) setPosition(positionSquareNumber + GRID_DIMENSION);
+            e.preventDefault();
+          } else if (key === "d" || key === "e" || key === "arrowright") {
+            if (positionSquareNumber % GRID_DIMENSION !== 0) setPosition(positionSquareNumber + 1);
+          } else if (key === "enter") {
+            if (hasActiveSelection && whereToGoAnchor && whereToGoAnchor.hasAttribute("href")) {
+              whereToGoAnchor.click();
+            }
+          }
+        });
+
+        function handleWhereToGoClick(event) {
+          if (!whereToGoAnchor) {
+            return;
+          }
+
+          const href = whereToGoAnchor.getAttribute("href");
+          if (!href || href === "#") {
+            return;
+          }
+
+          const modal = window.SuLeavingModal;
+          if (!modal || typeof modal.shouldWarnForUrl !== "function" || typeof modal.show !== "function") {
+            return;
+          }
+
+          let destination;
+          try {
+            destination = new URL(href, window.location.href);
+          } catch (error) {
+            return;
+          }
+
+          if (!modal.shouldWarnForUrl(destination)) {
+            return;
+          }
+
+          event.preventDefault();
+          modal.show(destination, whereToGoAnchor.getAttribute("target") || "_self");
+        }
+
+        if (whereToGoAnchor) {
+          whereToGoAnchor.addEventListener("click", handleWhereToGoClick);
+        }
+
+        function lightUpFence(edge) {
+          litUpEdge.forEach(s => {
+            const element = document.getElementById("electric-fence-" + s);
+            if (element && element.parentNode) {
+              element.parentNode.removeChild(element);
+            }
+          });
+          litUpEdge.clear();
+          let nextEdge = new Set();
+          edge.forEach((square) => {
+            wasEverLitUp.add(square);
+            const element = document.createElement("div");
+            element.id = "electric-fence-" + square;
+            element.style.pointerEvents = "none";
+            element.style.position = "absolute";
+            element.style.left = ((square - 1) % GRID_DIMENSION) + "%";
+            element.style.top = Math.floor((square - 1) / GRID_DIMENSION) + "%";
+            element.style.width = "1%";
+            element.style.height = "1%";
+            element.style.background = "#ffd700";
+            element.style.opacity = "0.25";
+            document.getElementById("electric-fence").appendChild(element);
+            if (squarePersonalizations[square - 1] !== null) {
+              litUpEdge.add(square);
+              if (square > GRID_DIMENSION && !wasEverLitUp.has(square - GRID_DIMENSION)) {
+                nextEdge.add(square - GRID_DIMENSION);
+              }
+              if (square <= GRID_DIMENSION * (GRID_DIMENSION - 1) && !wasEverLitUp.has(square + GRID_DIMENSION)) {
+                nextEdge.add(square + GRID_DIMENSION);
+              }
+              if (square % GRID_DIMENSION != 1 && !wasEverLitUp.has(square - 1)) {
+                nextEdge.add(square - 1);
+              }
+              if (square % GRID_DIMENSION != 0 && !wasEverLitUp.has(square + 1)) {
+                nextEdge.add(square + 1);
+              }
+            } else {
+              fence.add(square);
+            }
+          });
+          if (nextEdge.size > 0) {
+            setTimeout(() => {
+              lightUpFence(nextEdge);
+            }, 25);
+          }
+        }
+      } catch (error) {
+        console.error("Homepage init failed", error);
       }
-    } catch (error) {
-      console.error("Homepage init failed", error);
-    }
     });
   </script>
-  <script type="module" src="/assets/js/square-lookup.js"></script>
-  <script src="/assets/js/pwa-init.js"></script>
+  <script type="module" src="{{ site.baseurl }}/assets/js/square-lookup.js"></script>
+  <script src="{{ site.baseurl }}/assets/js/pwa-init.js"></script>
 </body>
 
 </html>
