@@ -1,7 +1,22 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git mv:*)"
+      "Bash(git mv:*)",
+      "Bash(find:*)",
+      "Bash(pgrep:*)",
+      "Bash(tasklist:*)",
+      "Bash(findstr:*)",
+      "Bash(if [ -f .jekyll-metadata ])",
+      "Bash(then rm .jekyll-metadata)",
+      "Bash(else echo \"No .jekyll-metadata found\")",
+      "Bash(fi)",
+      "Bash(cat:*)",
+      "Bash(ls:*)",
+      "Bash(grep:*)",
+      "Bash(magick:*)",
+      "Bash(convert:*)",
+      "Bash(python:*)",
+      "Bash(npx tsc:*)"
     ],
     "deny": [],
     "ask": []

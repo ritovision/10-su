@@ -5,6 +5,7 @@ layout: null
 <html lang="en">
 
 <head>
+  <script>window.SITE_BASEURL = "{{ site.baseurl }}";</script>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   {% include pwa-meta-tags.html %}
@@ -13,9 +14,9 @@ layout: null
   <link rel="stylesheet" href="assets/css/main.css">
   <link rel="stylesheet" href="assets/css/square.css">
   <link rel="stylesheet" href="assets/css/chooser.css">
-  <link rel="stylesheet" href="/assets/modals/leaving-modal/modal.css">
-  <script src="/assets/modals/leaving-modal/modal-core.js"></script>
-  <script src="/assets/modals/leaving-modal/link-guard.js"></script>
+  <link rel="stylesheet" href="{{ site.baseurl }}/assets/modals/leaving-modal/modal.css">
+  <script src="{{ site.baseurl }}/assets/modals/leaving-modal/modal-core.js"></script>
+  <script src="{{ site.baseurl }}/assets/modals/leaving-modal/link-guard.js"></script>
   {% include nav-menu-head.html %}
   {% include alert-modal-head.html %}
   {% include offline-modal-head.html %}
@@ -49,7 +50,8 @@ layout: null
     <h2>Location</h2>
     <div class="square-location">
       <div class="square-location__canvas">
-        <img id="theImage" class="square-location__image" src="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" alt="All Su Squares">
+        <img id="theImage" class="square-location__image"
+          src="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" alt="All Su Squares">
         <img id="arrow" class="square-location__arrow" src="assets/images/dr.png" alt="Location">
       </div>
     </div>
@@ -72,226 +74,230 @@ layout: null
     </small>
   </footer>
   <script type="module">
-    import { buildBlockUrl, buildTokenUrl, getExplorerName } from '/assets/web3/services/explorer-links.js';
-    import { getWeb3Config } from '/assets/web3/config/index.js';
+    import { buildBlockUrl, buildTokenUrl, getExplorerName } from "{{ site.baseurl }}/assets/web3/services/explorer-links.js";
+    import { getWeb3Config } from "{{ site.baseurl }}/assets/web3/config/index.js";
 
     document.addEventListener("DOMContentLoaded", () => {
-    const runtimeCfg = window.suWeb3 || window.SU_WEB3 || {};
-    const runtimeChain =
-      (runtimeCfg.chain || runtimeCfg.CHAIN || runtimeCfg.network || runtimeCfg.NETWORK || "mainnet").toString().toLowerCase();
-    const runtimeAssetBases = runtimeCfg.assetBases || {};
-    const assetBase = String(runtimeAssetBases[runtimeChain] || "/build").replace(/\/+$/, "");
-    const assetPath = (rel) => `${assetBase}/${String(rel).replace(/^\/+/, "")}`;
-
-    // Get URL fragment
-    const squareNumber = parseInt(window.location.hash.substring(1));
-    const personalizations = fetch(assetPath('squarePersonalizations.json')).then(response => response.json());
-    const extras = fetch(assetPath('squareExtra.json')).then(response => response.json());
-    const explorerName = getExplorerName();
-    const { contracts } = getWeb3Config();
-
-    Promise.all([personalizations, extras]).then(([personalizations, extras]) => {
-      // Each personalization is [title, href] or null
-      // Each extra is [mintedBlock, updatedBlock, mainIsPersonalized, version] or null
-      // Arrays are zero indexed, but the first Su Square number is 1!
-
-      const personalization = personalizations[squareNumber - 1];
-
-      const elSquareNumber = document.getElementById("square-number");
-      elSquareNumber.innerText = squareNumber;
-
-      const elMinted = document.getElementById('minted');
-      const elViewEtherscan = document.getElementById('view-etherscan');
-      const mintedData = extras[squareNumber - 1];
-      const isMinted = Boolean(mintedData);
-      if (isMinted) {
-        const mintedBlock = mintedData[0];
-        const blockUrl = buildBlockUrl(mintedBlock);
-        elMinted.innerHTML = blockUrl
-          ? `<a href="${blockUrl}" target="_blank" rel="noopener">Block ${mintedBlock}</a>`
-          : `Block ${mintedBlock}`;
-
-        const tokenUrl = buildTokenUrl(contracts.primary, squareNumber);
-        if (tokenUrl) {
-          elViewEtherscan.href = tokenUrl;
-          elViewEtherscan.textContent = `View NFT on ${explorerName}`;
-          elViewEtherscan.style.display = 'inline-block';
-        }
-      } else {
-        elMinted.innerText = 'Not minted';
-        elViewEtherscan.style.display = 'none';
+      const baseurl = window.SITE_BASEURL || '';
+      const runtimeCfg = window.suWeb3 || window.SU_WEB3 || {};
+      const runtimeChain =
+        (runtimeCfg.chain || runtimeCfg.CHAIN || runtimeCfg.network || runtimeCfg.NETWORK || "mainnet").toString().toLowerCase();
+      const runtimeAssetBases = runtimeCfg.assetBases || {};
+      let assetBase = String(runtimeAssetBases[runtimeChain] || "/build").replace(/\/+$/, "");
+      if (baseurl && !assetBase.startsWith(baseurl)) {
+        assetBase = baseurl + assetBase;
       }
+      const assetPath = (rel) => `${assetBase}/${String(rel).replace(/^\/+/, "")}`;
 
-      const elPersonalized = document.getElementById('personalized');
-      const hasPersonalization = Boolean(personalization && (personalization[0] || personalization[1])) || Boolean(mintedData && mintedData[2]);
-      if (isMinted && hasPersonalization) {
-        const personalizedBlock = mintedData ? mintedData[1] : null;
-        if (personalizedBlock) {
-          const personalizedBlockUrl = buildBlockUrl(personalizedBlock);
-          elPersonalized.innerHTML = personalizedBlockUrl
-            ? `<a href="${personalizedBlockUrl}" target="_blank" rel="noopener">Block ${personalizedBlock}</a>`
-            : `Block ${personalizedBlock}`;
-        } else {
-          elPersonalized.innerText = 'Personalized';
-        }
-      } else {
-        elPersonalized.innerText = 'Not personalized';
-      }
+      // Get URL fragment
+      const squareNumber = parseInt(window.location.hash.substring(1));
+      const personalizations = fetch(assetPath('squarePersonalizations.json')).then(response => response.json());
+      const extras = fetch(assetPath('squareExtra.json')).then(response => response.json());
+      const explorerName = getExplorerName();
+      const { contracts } = getWeb3Config();
 
-      const elTitle = document.getElementById('title');
-      elTitle.innerText = personalization ? personalization[0] : 'Not personalized';
+      Promise.all([personalizations, extras]).then(([personalizations, extras]) => {
+        // Each personalization is [title, href] or null
+        // Each extra is [mintedBlock, updatedBlock, mainIsPersonalized, version] or null
+        // Arrays are zero indexed, but the first Su Square number is 1!
 
-      const elLink = document.getElementById('link');
-      const hasPersonalizationLink = isMinted && personalization && personalization[1];
-      if (hasPersonalizationLink) {
-        const hrefRaw = personalization[1];
-        const normalizedHref = window.suNormalizeHref ? window.suNormalizeHref(hrefRaw) : hrefRaw;
-        elLink.innerHTML = normalizedHref
-          ? `<a id="square-out-link" href="${normalizedHref}" target="_blank" rel="noopener">${hrefRaw}</a>`
-          : hrefRaw;
-        const guardedAnchor = document.getElementById('square-out-link');
-        if (guardedAnchor) {
-          if (window.SuLeavingLinkGuard && typeof window.SuLeavingLinkGuard.guardLink === 'function') {
-            window.SuLeavingLinkGuard.guardLink(guardedAnchor);
-          } else if (window.SuLeavingModal && typeof window.SuLeavingModal.gateAnchor === 'function') {
-            window.SuLeavingModal.gateAnchor(guardedAnchor);
-          }
-        }
-      } else {
-        elLink.innerText = 'Not personalized';
-      }
+        const personalization = personalizations[squareNumber - 1];
 
-      const elEmojified = document.getElementById('emojified');
+        const elSquareNumber = document.getElementById("square-number");
+        elSquareNumber.innerText = squareNumber;
 
-      // Set image
-      const row = Math.floor((squareNumber - 1) / 100); // 0 indexed
-      const col = (squareNumber - 1) % 100; // 0 indexed
-      const elImage = document.getElementById('image');
-      elImage.style.backgroundImage = `url("${assetPath('wholeSquare.png')}")`;
-      elImage.style.backgroundPosition = `-${col * 10}px -${row * 10}px`;
-      elImage.style.height = '10px';
-      elImage.style.width = '10px';
-      elImage.style.display = 'inline-block';
-      elImage.style.zoom = '20';
-      elImage.style.imageRendering = 'pixelated';
+        const elMinted = document.getElementById('minted');
+        const elViewEtherscan = document.getElementById('view-etherscan');
+        const mintedData = extras[squareNumber - 1];
+        const isMinted = Boolean(mintedData);
+        if (isMinted) {
+          const mintedBlock = mintedData[0];
+          const blockUrl = buildBlockUrl(mintedBlock);
+          elMinted.innerHTML = blockUrl
+            ? `<a href="${blockUrl}" target="_blank" rel="noopener">Block ${mintedBlock}</a>`
+            : `Block ${mintedBlock}`;
 
-      // Set arrow location, based on quadrant
-      const elArrow = document.getElementById('arrow');
-      const elCanvas = document.querySelector('.square-location__canvas');
-      const mapImage = document.getElementById('theImage');
-      if (mapImage) {
-        mapImage.src = assetPath('wholeSquare.png');
-      }
-
-      const updateArrowPosition = () => {
-        // Get actual rendered size and calculate scale factor
-        const actualWidth = elCanvas.offsetWidth;
-        const originalSize = 1000; // Original image is 1000x1000px
-        const dynamicScale = actualWidth / originalSize;
-
-        const scalePosition = (value) => `${value * dynamicScale}px`;
-        const setArrow = (src, topPx, leftPx) => {
-          elArrow.src = src;
-          elArrow.style.top = scalePosition(topPx);
-          elArrow.style.left = scalePosition(leftPx);
-        };
-        elArrow.style.width = `${100 * dynamicScale}px`;
-        elArrow.style.height = `${100 * dynamicScale}px`;
-
-        if (row < 50) {
-          if (col < 50) {
-            setArrow('assets/images/ul.png', row * 10 + 10, col * 10 + 10);
-          } else {
-            setArrow('assets/images/ur.png', row * 10 + 10, col * 10 - 100);
+          const tokenUrl = buildTokenUrl(contracts.primary, squareNumber);
+          if (tokenUrl) {
+            elViewEtherscan.href = tokenUrl;
+            elViewEtherscan.textContent = `View NFT on ${explorerName}`;
+            elViewEtherscan.style.display = 'inline-block';
           }
         } else {
-          if (col < 50) {
-            setArrow('assets/images/dl.png', row * 10 - 100, col * 10 + 10);
-          } else {
-            setArrow('assets/images/dr.png', row * 10 - 100, col * 10 - 100);
-          }
+          elMinted.innerText = 'Not minted';
+          elViewEtherscan.style.display = 'none';
         }
-      };
 
-      // Initial positioning
-      updateArrowPosition();
+        const elPersonalized = document.getElementById('personalized');
+        const hasPersonalization = Boolean(personalization && (personalization[0] || personalization[1])) || Boolean(mintedData && mintedData[2]);
+        if (isMinted && hasPersonalization) {
+          const personalizedBlock = mintedData ? mintedData[1] : null;
+          if (personalizedBlock) {
+            const personalizedBlockUrl = buildBlockUrl(personalizedBlock);
+            elPersonalized.innerHTML = personalizedBlockUrl
+              ? `<a href="${personalizedBlockUrl}" target="_blank" rel="noopener">Block ${personalizedBlock}</a>`
+              : `Block ${personalizedBlock}`;
+          } else {
+            elPersonalized.innerText = 'Personalized';
+          }
+        } else {
+          elPersonalized.innerText = 'Not personalized';
+        }
 
-      // Update on window resize
-      window.addEventListener('resize', updateArrowPosition);
+        const elTitle = document.getElementById('title');
+        elTitle.innerText = personalization ? personalization[0] : 'Not personalized';
 
-      // Emoji squares and RGB values for ⬛⬜🟥🟧🟨🟩🟦🟪🟫
-      const emojis = [
-        { "emoji": "⬛", "red": 0, "green": 0, "blue": 0 },
-        { "emoji": "⬜", "red": 255, "green": 255, "blue": 255 },
-        { "emoji": "🟥", "red": 255, "green": 0, "blue": 0 },
-        { "emoji": "🟧", "red": 255, "green": 165, "blue": 0 },
-        { "emoji": "🟨", "red": 255, "green": 255, "blue": 0 },
-        { "emoji": "🟩", "red": 0, "green": 128, "blue": 0 },
-        { "emoji": "🟦", "red": 0, "green": 0, "blue": 255 },
-        { "emoji": "🟪", "red": 128, "green": 0, "blue": 128 },
-        { "emoji": "🟫", "red": 139, "green": 69, "blue": 19 },
-      ]
-
-      // Create canvas
-      const canvas = document.createElement('canvas');
-      canvas.width = 10;
-      canvas.height = 10;
-      // Add wholeSquare to canvas
-      const context = canvas.getContext('2d');
-      const image = new Image();
-      image.src = assetPath('wholeSquare.png');
-      image.onload = function () {
-        context.drawImage(image, col * 10, row * 10, 10, 10, 0, 0, 10, 10);
-        // Get pixels
-        const imageData = context.getImageData(0, 0, 10, 10);
-        const pixels = imageData.data;
-        // Loop pixels
-        let emojiString = '';
-        for (let i = 0; i < pixels.length; i += 4) {
-          // Get pixel color
-          const red = pixels[i];
-          const green = pixels[i + 1];
-          const blue = pixels[i + 2];
-          // Find closest emoji
-          let closestEmoji = emojis[0];
-          let closestDistance = 195075;
-          for (let j = 0; j < emojis.length; j++) {
-            const emoji = emojis[j];
-            const distance = Math.sqrt(
-              Math.pow(emoji.red - red, 2) +
-              Math.pow(emoji.green - green, 2) +
-              Math.pow(emoji.blue - blue, 2)
-            );
-            if (distance < closestDistance) {
-              closestEmoji = emoji;
-              closestDistance = distance;
+        const elLink = document.getElementById('link');
+        const hasPersonalizationLink = isMinted && personalization && personalization[1];
+        if (hasPersonalizationLink) {
+          const hrefRaw = personalization[1];
+          const normalizedHref = window.suNormalizeHref ? window.suNormalizeHref(hrefRaw) : hrefRaw;
+          elLink.innerHTML = normalizedHref
+            ? `<a id="square-out-link" href="${normalizedHref}" target="_blank" rel="noopener">${hrefRaw}</a>`
+            : hrefRaw;
+          const guardedAnchor = document.getElementById('square-out-link');
+          if (guardedAnchor) {
+            if (window.SuLeavingLinkGuard && typeof window.SuLeavingLinkGuard.guardLink === 'function') {
+              window.SuLeavingLinkGuard.guardLink(guardedAnchor);
+            } else if (window.SuLeavingModal && typeof window.SuLeavingModal.gateAnchor === 'function') {
+              window.SuLeavingModal.gateAnchor(guardedAnchor);
             }
           }
-          emojiString += closestEmoji.emoji;
-          // Add line break
-          if (i % 40 === 36) {
-            emojiString += "<br>";
-          }
+        } else {
+          elLink.innerText = 'Not personalized';
         }
-        // Set emoji string
-        elEmojified.innerHTML = emojiString;
-      }
 
-      // Copy emojified
-      const elCopyEmojified = document.getElementById('copy-emojified');
-      elCopyEmojified.addEventListener('click', () => {
-        const range = document.createRange();
-        range.selectNode(elEmojified);
-        window.getSelection().removeAllRanges();
-        window.getSelection().addRange(range);
-        document.execCommand('copy');
-        window.getSelection().removeAllRanges();
+        const elEmojified = document.getElementById('emojified');
+
+        // Set image
+        const row = Math.floor((squareNumber - 1) / 100); // 0 indexed
+        const col = (squareNumber - 1) % 100; // 0 indexed
+        const elImage = document.getElementById('image');
+        elImage.style.backgroundImage = `url("${assetPath('wholeSquare.png')}")`;
+        elImage.style.backgroundPosition = `-${col * 10}px -${row * 10}px`;
+        elImage.style.height = '10px';
+        elImage.style.width = '10px';
+        elImage.style.display = 'inline-block';
+        elImage.style.zoom = '20';
+        elImage.style.imageRendering = 'pixelated';
+
+        // Set arrow location, based on quadrant
+        const elArrow = document.getElementById('arrow');
+        const elCanvas = document.querySelector('.square-location__canvas');
+        const mapImage = document.getElementById('theImage');
+        if (mapImage) {
+          mapImage.src = assetPath('wholeSquare.png');
+        }
+
+        const updateArrowPosition = () => {
+          // Get actual rendered size and calculate scale factor
+          const actualWidth = elCanvas.offsetWidth;
+          const originalSize = 1000; // Original image is 1000x1000px
+          const dynamicScale = actualWidth / originalSize;
+
+          const scalePosition = (value) => `${value * dynamicScale}px`;
+          const setArrow = (src, topPx, leftPx) => {
+            elArrow.src = src;
+            elArrow.style.top = scalePosition(topPx);
+            elArrow.style.left = scalePosition(leftPx);
+          };
+          elArrow.style.width = `${100 * dynamicScale}px`;
+          elArrow.style.height = `${100 * dynamicScale}px`;
+
+          if (row < 50) {
+            if (col < 50) {
+              setArrow('assets/images/ul.png', row * 10 + 10, col * 10 + 10);
+            } else {
+              setArrow('assets/images/ur.png', row * 10 + 10, col * 10 - 100);
+            }
+          } else {
+            if (col < 50) {
+              setArrow('assets/images/dl.png', row * 10 - 100, col * 10 + 10);
+            } else {
+              setArrow('assets/images/dr.png', row * 10 - 100, col * 10 - 100);
+            }
+          }
+        };
+
+        // Initial positioning
+        updateArrowPosition();
+
+        // Update on window resize
+        window.addEventListener('resize', updateArrowPosition);
+
+        // Emoji squares and RGB values for ⬛⬜🟥🟧🟨🟩🟦🟪🟫
+        const emojis = [
+          { "emoji": "⬛", "red": 0, "green": 0, "blue": 0 },
+          { "emoji": "⬜", "red": 255, "green": 255, "blue": 255 },
+          { "emoji": "🟥", "red": 255, "green": 0, "blue": 0 },
+          { "emoji": "🟧", "red": 255, "green": 165, "blue": 0 },
+          { "emoji": "🟨", "red": 255, "green": 255, "blue": 0 },
+          { "emoji": "🟩", "red": 0, "green": 128, "blue": 0 },
+          { "emoji": "🟦", "red": 0, "green": 0, "blue": 255 },
+          { "emoji": "🟪", "red": 128, "green": 0, "blue": 128 },
+          { "emoji": "🟫", "red": 139, "green": 69, "blue": 19 },
+        ]
+
+        // Create canvas
+        const canvas = document.createElement('canvas');
+        canvas.width = 10;
+        canvas.height = 10;
+        // Add wholeSquare to canvas
+        const context = canvas.getContext('2d');
+        const image = new Image();
+        image.src = assetPath('wholeSquare.png');
+        image.onload = function () {
+          context.drawImage(image, col * 10, row * 10, 10, 10, 0, 0, 10, 10);
+          // Get pixels
+          const imageData = context.getImageData(0, 0, 10, 10);
+          const pixels = imageData.data;
+          // Loop pixels
+          let emojiString = '';
+          for (let i = 0; i < pixels.length; i += 4) {
+            // Get pixel color
+            const red = pixels[i];
+            const green = pixels[i + 1];
+            const blue = pixels[i + 2];
+            // Find closest emoji
+            let closestEmoji = emojis[0];
+            let closestDistance = 195075;
+            for (let j = 0; j < emojis.length; j++) {
+              const emoji = emojis[j];
+              const distance = Math.sqrt(
+                Math.pow(emoji.red - red, 2) +
+                Math.pow(emoji.green - green, 2) +
+                Math.pow(emoji.blue - blue, 2)
+              );
+              if (distance < closestDistance) {
+                closestEmoji = emoji;
+                closestDistance = distance;
+              }
+            }
+            emojiString += closestEmoji.emoji;
+            // Add line break
+            if (i % 40 === 36) {
+              emojiString += "<br>";
+            }
+          }
+          // Set emoji string
+          elEmojified.innerHTML = emojiString;
+        }
+
+        // Copy emojified
+        const elCopyEmojified = document.getElementById('copy-emojified');
+        elCopyEmojified.addEventListener('click', () => {
+          const range = document.createRange();
+          range.selectNode(elEmojified);
+          window.getSelection().removeAllRanges();
+          window.getSelection().addRange(range);
+          document.execCommand('copy');
+          window.getSelection().removeAllRanges();
+        });
       });
     });
-  });
   </script>
-  <script type="module" src="/assets/js/square-lookup.js"></script>
-  <script src="/assets/js/pwa-init.js"></script>
+  <script type="module" src="{{ site.baseurl }}/assets/js/square-lookup.js"></script>
+  <script src="{{ site.baseurl }}/assets/js/pwa-init.js"></script>
 </body>
 
 </html>

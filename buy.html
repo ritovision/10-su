@@ -5,6 +5,7 @@ layout: null
 <html lang="en" class="mint-page">
 
 <head>
+  <script>window.SITE_BASEURL = "{{ site.baseurl }}";</script>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   {% include pwa-meta-tags.html %}
@@ -51,12 +52,13 @@ layout: null
     <div id="mint-success" style="display:none">
       <p>Your Square is minted.</p>
       <div class="wallet-actions">
-        <a id="personalize-now" class="btn btn-lg" href="/personalize">Personalize Now</a>
+        <a id="personalize-now" class="btn btn-lg" href="{{ site.baseurl }}/personalize">Personalize Now</a>
         <button id="mint-another" type="button" class="btn btn-lg">Mint Another</button>
       </div>
     </div>
 
-    <p>Your purchase is subject to the terms, and your understanding of, our <a href="/white-paper">white paper</a>.</p>
+    <p>Your purchase is subject to the terms, and your understanding of, our <a
+        href="{{ site.baseurl }}/white-paper">white paper</a>.</p>
 
     <div id="tx-fixture"></div>
   </article>
@@ -74,14 +76,14 @@ layout: null
       ensureCorrectNetwork,
       openWalletFromStore,
       hasWalletConnectSession,
-    } from "/assets/web3/foundation.js";
-    import { createTxFixture } from "/assets/web3/tx/index.js";
-    import { getWeb3Config } from "/assets/web3/config.js";
-    import { purchaseSquare } from "/assets/web3/services/primary.js";
-    import { buildTxUrl } from "/assets/web3/services/explorer-links.js";
-    import { attachListChooser } from "/assets/js/choosers/list-chooser.js";
-    import { attachCanvasChooser } from "/assets/js/choosers/canvas-chooser.js";
-    import { loadSquareData } from "/assets/js/square-data.js";
+    } from "{{ site.baseurl }}/assets/web3/foundation.js";
+    import { createTxFixture } from "{{ site.baseurl }}/assets/web3/tx/index.js";
+    import { getWeb3Config } from "{{ site.baseurl }}/assets/web3/config.js";
+    import { purchaseSquare } from "{{ site.baseurl }}/assets/web3/services/primary.js";
+    import { buildTxUrl } from "{{ site.baseurl }}/assets/web3/services/explorer-links.js";
+    import { attachListChooser } from "{{ site.baseurl }}/assets/js/choosers/list-chooser.js";
+    import { attachCanvasChooser } from "{{ site.baseurl }}/assets/js/choosers/canvas-chooser.js";
+    import { loadSquareData } from "{{ site.baseurl }}/assets/js/square-data.js";
 
     // Elements and state //////////////////////////////////////////////////////////////////////////////////////////////
     const squareNumberWithNumberSignSpan = document.getElementById("square-number-with-number-sign");
@@ -262,7 +264,7 @@ layout: null
       });
     });
   </script>
-  <script src="/assets/js/pwa-init.js"></script>
+  <script src="{{ site.baseurl }}/assets/js/pwa-init.js"></script>
 </body>
 
 </html>
