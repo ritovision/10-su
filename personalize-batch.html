@@ -82,7 +82,7 @@ layout: null
     <h2>Personalize</h2>
     <p>Click this button to personalize your Squares.</p>
     <div class="wallet-actions">
-      <button id="open-wallet-app" type="button" class="btn">Open wallet</button>
+      <button id="open-wallet-app" type="button" class="btn">Open mobile wallet</button>
       <button id="personalize" class="btn btn-lg">Personalize</button>
     </div>
 
@@ -351,6 +351,12 @@ layout: null
       openWalletButton.style.display = hasSession ? "inline-block" : "none";
     };
 
+    const triggerWalletDeepLink = () => {
+      if (hasWalletConnectSession()) {
+        openWalletFromStore();
+      }
+    };
+
     if (openWalletButton) {
       updateOpenWalletButton();
       window.addEventListener("su-wc-session-change", (event) => {
@@ -369,6 +375,7 @@ layout: null
       if (!personalizationArgs) {
         return alert("ERROR: Please perform preflight, or manually edit the preflight box and pass validation, then try again.");
       }
+      triggerWalletDeepLink();
       txUi.startProcessing("Sending personalization batch. Confirm in your wallet to continue.");
       const doSendTransaction = async (wagmi)=>{
         txUi.setWalletContext({

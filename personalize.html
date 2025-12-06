@@ -18,7 +18,7 @@ layout: null
 </head>
 
 <body>
-  {% include nav-header.html %}
+  {% include nav-header.html desktop_button_one_label="Mint" desktop_button_one_href="/buy" %}
 
   <article class="lead">
     <h1>Personalize</h1>
@@ -66,7 +66,7 @@ layout: null
     <h2>Personalize</h2>
     <p>Click this button to personalize your Square.</p>
     <div class="wallet-actions">
-      <button id="open-wallet-app" type="button" class="btn">Open wallet</button>
+      <button id="open-wallet-app" type="button" class="btn">Open mobile wallet</button>
       <button id="personalize" class="btn btn-lg">Personalize</button>
     </div>
 
@@ -217,6 +217,12 @@ layout: null
       openWalletButton.style.display = hasSession ? "inline-block" : "none";
     };
 
+    const triggerWalletDeepLink = () => {
+      if (hasWalletConnectSession()) {
+        openWalletFromStore();
+      }
+    };
+
     if (openWalletButton) {
       updateOpenWalletButton();
       window.addEventListener("su-wc-session-change", (event) => {
@@ -244,6 +250,7 @@ layout: null
       if (!imagePixelsHex) {
         return alert("Please select an image.");
       }
+      triggerWalletDeepLink();
       txUi.startProcessing(`Personalizing Square #${squareNumber}. Confirm in your wallet to continue.`);
       const doSendTransaction = async (wagmi)=>{
         txUi.setWalletContext({
