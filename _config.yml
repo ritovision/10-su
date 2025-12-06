@@ -1,0 +1,14 @@
+# Exclude directories from Jekyll processing
+exclude:
+  - erc721/
+  - vendor/
+  - Gemfile
+  - Gemfile.lock
+  - README.md
+  - nodejs/
+  - nul
+  - NUL
+
+# Plugins
+plugins:
+  - jekyll-sitemap
