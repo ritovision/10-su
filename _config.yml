@@ -1,5 +1,5 @@
 # Site settings
-baseurl: /10-su/
+baseurl: /10-su
 url: https://ritovision.github.io
 
 # Exclude directories from Jekyll processing
