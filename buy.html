@@ -19,7 +19,7 @@ layout: null
 </head>
 
 <body>
-  {% include nav-header.html %}
+  {% include nav-header.html desktop_button_one_label="Personalize" desktop_button_one_href="/personalize" %}
   <article class="lead">
     <h1>Mint Su Squares <span id="square-number-with-number-sign"></span></h1>
     <p><em>If you have a question, please mail <a
@@ -42,7 +42,7 @@ layout: null
     <div id="mint-selected-square" style="display:none">
       <p>Please connect your wallet using the button above and then click mint below.</p>
       <div class="wallet-actions">
-        <button id="open-wallet-app" type="button" class="btn btn-lg">Open wallet</button>
+        <button id="open-wallet-app" type="button" class="btn btn-lg">Open mobile wallet</button>
         <button id="mint" type="button" class="btn btn-lg">Mint Square</button>
       </div>
     </div>
@@ -203,6 +203,12 @@ layout: null
       openWalletButton.style.display = hasSession ? "inline-block" : "none";
     };
 
+    const triggerWalletDeepLink = () => {
+      if (hasWalletConnectSession()) {
+        openWalletFromStore();
+      }
+    };
+
     if (openWalletButton) {
       updateOpenWalletButton();
       window.addEventListener("su-wc-session-change", (event) => {
@@ -221,6 +227,7 @@ layout: null
       if (!squareNumber) {
         return alert("Please enter a Square number.");
       }
+      triggerWalletDeepLink();
       txUi.startProcessing(`Minting Square #${squareNumber}. Confirm in your wallet to continue.`);
       const doSendTransaction = async (wagmi) => {
         txUi.setWalletContext({
