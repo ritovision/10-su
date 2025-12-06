@@ -5,6 +5,7 @@ layout: null
 <html lang="en" class="personalize-page">
 
 <head>
+  <script>window.SITE_BASEURL = "{{ site.baseurl }}";</script>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   {% include pwa-meta-tags.html %}
@@ -25,16 +26,20 @@ layout: null
     <h1>Batch personalize</h1>
     <p>
       <em>If you have any questions, please mail <a
-          href="mailto:Su@TenThousandSu.com?subject=Personalize+underlay+batch">Su@TenThousandSu.com</a>. The price to personalize is 0.001 Ether per Square.</em>
+          href="mailto:Su@TenThousandSu.com?subject=Personalize+underlay+batch">Su@TenThousandSu.com</a>. The price to
+        personalize is 0.001 Ether per Square.</em>
     </p>
     <p>
-      Use this page to personalize Su Squares you own on TenThousandSu.com. If your Square was previously personalized using the old, more expensive method you will need to <a href="https://tools.tenthousandsu.com/unpersonalize.html">unpersonalize</a> it first.
+      Use this page to personalize Su Squares you own on TenThousandSu.com. If your Square was previously personalized
+      using the old, more expensive method you will need to <a
+        href="https://tools.tenthousandsu.com/unpersonalize.html">unpersonalize</a> it first.
     </p>
 
     <h2>Select top-left Square</h2>
     <p>Which Square will be the topmost and leftmost Square you will personalize?</p>
     <p>
-      <input id="top-left-square-number" type="number" min="1" max="10000" required style="width:7em" placeholder="e.g. 101">
+      <input id="top-left-square-number" type="number" min="1" max="10000" required style="width:7em"
+        placeholder="e.g. 101">
     </p>
 
     <h2>Enter title</h2>
@@ -45,7 +50,8 @@ layout: null
     <p><span id="title-count">0</span> of 64 bytes</p>
 
     <h2>Enter URL</h2>
-    <p>Enter a URL for your Squares. Later you can change the URL of each Square individually. Typically this will start with <code>https://</code>.</p>
+    <p>Enter a URL for your Squares. Later you can change the URL of each Square individually. Typically this will start
+      with <code>https://</code>.</p>
     <p>
       <input id="url" type="text" maxlength="96" placeholder="e.g. https://example.com">
     </p>
@@ -54,7 +60,8 @@ layout: null
     <h2>Upload image</h2>
     <p>Design your image carefully.</p>
     <p>Do not use animation or transparency. PNG and some other formats can be used here.</p>
-    <p>Each Square is 10&times;10 pixels. For example, if the area you want to personalize is 3 Squares wide and 2 Squares tall, your image must be 30&times;20 pixels.</p>
+    <p>Each Square is 10&times;10 pixels. For example, if the area you want to personalize is 3 Squares wide and 2
+      Squares tall, your image must be 30&times;20 pixels.</p>
     <p>
       <input id="image" type="file" accept="image/png, image/jpeg, image/gif">
     </p>
@@ -92,7 +99,8 @@ layout: null
 
   <footer>
     <small>
-      No cookies. No analytics. To the extent possible under law, Su Entriken has waived all copyright and related or neighboring rights to the TenThousandSu.com website. This work is published from the United States.
+      No cookies. No analytics. To the extent possible under law, Su Entriken has waived all copyright and related or
+      neighboring rights to the TenThousandSu.com website. This work is published from the United States.
     </small>
   </footer>
 
@@ -102,11 +110,11 @@ layout: null
       ensureCorrectNetwork,
       openWalletFromStore,
       hasWalletConnectSession,
-    } from "/assets/web3/foundation.js";
-    import { createTxFixture } from "/assets/web3/tx/index.js";
-    import { getWeb3Config } from "/assets/web3/config.js";
-    import { personalizeUnderlayBatch } from "/assets/web3/services/underlay-batch.js";
-    import { buildTxUrl } from "/assets/web3/services/explorer-links.js";
+    } from "{{ site.baseurl }}/assets/web3/foundation.js";
+    import { createTxFixture } from "{{ site.baseurl }}/assets/web3/tx/index.js";
+    import { getWeb3Config } from "{{ site.baseurl }}/assets/web3/config.js";
+    import { personalizeUnderlayBatch } from "{{ site.baseurl }}/assets/web3/services/underlay-batch.js";
+    import { buildTxUrl } from "{{ site.baseurl }}/assets/web3/services/explorer-links.js";
 
     // Elements and state //////////////////////////////////////////////////////////////////////////////////////////////
     const topLeftSquareNumberInput = document.getElementById("top-left-square-number");
@@ -138,7 +146,7 @@ layout: null
     let personalizationArgs;
 
     // Validate changes to #square-number //////////////////////////////////////////////////////////////////////////////
-    topLeftSquareNumberInput.addEventListener("input", (event)=>{
+    topLeftSquareNumberInput.addEventListener("input", (event) => {
       topLeftSquareNumber = null;
       const value = parseInt(event.target.value);
       if (isNaN(value) || value < 1 || value > 10000) {
@@ -148,7 +156,7 @@ layout: null
     });
 
     // Validate changes to #title //////////////////////////////////////////////////////////////////////////////////////
-    titleInput.addEventListener("input", (event)=>{
+    titleInput.addEventListener("input", (event) => {
       title = null;
       const length = new TextEncoder().encode(event.target.value).length; // UTF-8 byte length
       titleCountSpan.innerText = length;
@@ -162,7 +170,7 @@ layout: null
     });
 
     // Validate changes to #url ////////////////////////////////////////////////////////////////////////////////////////
-    urlInput.addEventListener("input", (event)=>{
+    urlInput.addEventListener("input", (event) => {
       url = null;
       const length = new TextEncoder().encode(event.target.value).length; // UTF-8 byte length
       urlCountSpan.innerText = length;
@@ -176,7 +184,7 @@ layout: null
     });
 
     // Validate changes to #image //////////////////////////////////////////////////////////////////////////////////////
-    imageInput.addEventListener("change", (event)=>{
+    imageInput.addEventListener("change", (event) => {
       imageWidth = null;
       imageHeight = null;
       imagePixelData = null;
@@ -220,9 +228,9 @@ layout: null
         for (let i = 0; i < contextImageData.data.length; i += 4) {
           const [red, green, blue, alpha] = contextImageData.data.slice(i, i + 4);
           // Mix color to a white background (255) if there is transparency
-          const mixedRed = Math.floor((red * alpha + 255 * (255-alpha)) / 255);
-          const mixedGreen = Math.floor((green * alpha + 255 * (255-alpha)) / 255);
-          const mixedBlue = Math.floor((blue * alpha + 255 * (255-alpha)) / 255);
+          const mixedRed = Math.floor((red * alpha + 255 * (255 - alpha)) / 255);
+          const mixedGreen = Math.floor((green * alpha + 255 * (255 - alpha)) / 255);
+          const mixedBlue = Math.floor((blue * alpha + 255 * (255 - alpha)) / 255);
           if (alpha != 255) alphaWarning = true;
           imagePixelData.push(mixedRed, mixedGreen, mixedBlue);
         }
@@ -237,7 +245,7 @@ layout: null
     });
 
     // Validate changes to #preflight //////////////////////////////////////////////////////////////////////////////////
-    preflightOutputTextArea.addEventListener("input", (event)=>{
+    preflightOutputTextArea.addEventListener("input", (event) => {
       personalizationArgs = null;
       preflightStatusSpan.innerText = "Contents are not valid.";
       // check that each line has a valid square number, title, url, and pixel data
@@ -378,7 +386,7 @@ layout: null
       }
       triggerWalletDeepLink();
       txUi.startProcessing("Sending personalization batch. Confirm in your wallet to continue.");
-      const doSendTransaction = async (wagmi)=>{
+      const doSendTransaction = async (wagmi) => {
         txUi.setWalletContext({
           hasSession: hasWalletConnectSession(),
           isWalletConnect: wagmi?.getAccount?.()?.connector?.id === "walletConnect",
@@ -407,7 +415,7 @@ layout: null
       });
     });
   </script>
-  <script src="/assets/js/pwa-init.js"></script>
+  <script src="{{ site.baseurl }}/assets/js/pwa-init.js"></script>
 </body>
 
 </html>
