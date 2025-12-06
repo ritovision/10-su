@@ -12,6 +12,7 @@ layout: null
   <link rel="stylesheet" href="assets/css/main.css">
   <link rel="stylesheet" href="assets/css/buy.css">
   <link rel="stylesheet" href="assets/css/chooser.css">
+  <link rel="stylesheet" href="assets/web3/tx/styles.css">
   {% include nav-menu-head.html %}
   {% include alert-modal-head.html %}
   {% include offline-modal-head.html %}
@@ -41,15 +42,22 @@ layout: null
     <div id="mint-selected-square" style="display:none">
       <p>Please connect your wallet using the button above and then click mint below.</p>
       <div class="wallet-actions">
-        <button id="open-wallet-app" type="button" class="btn">Open wallet</button>
+        <button id="open-wallet-app" type="button" class="btn btn-lg">Open wallet</button>
         <button id="mint" type="button" class="btn btn-lg">Mint Square</button>
+      </div>
+    </div>
+
+    <div id="mint-success" style="display:none">
+      <p>Your Square is minted.</p>
+      <div class="wallet-actions">
+        <a id="personalize-now" class="btn btn-lg" href="/personalize">Personalize Now</a>
+        <button id="mint-another" type="button" class="btn btn-lg">Mint Another</button>
       </div>
     </div>
 
     <p>Your purchase is subject to the terms, and your understanding of, our <a href="/white-paper">white paper</a>.</p>
 
-    <div id="receipts">
-    </div>
+    <div id="tx-fixture"></div>
   </article>
 
   <footer>
@@ -66,6 +74,8 @@ layout: null
       openWalletFromStore,
       hasWalletConnectSession,
     } from "/assets/web3/foundation.js";
+    import { createTxFixture } from "/assets/web3/tx/index.js";
+    import { getWeb3Config } from "/assets/web3/config.js";
     import { purchaseSquare } from "/assets/web3/services/primary.js";
     import { buildTxUrl } from "/assets/web3/services/explorer-links.js";
     import { attachListChooser } from "/assets/js/choosers/list-chooser.js";
@@ -80,11 +90,43 @@ layout: null
     const mintButton = document.getElementById("mint");
     const pickASquareDiv = document.getElementById("pick-a-square");
     const mintSelectedSquareDiv = document.getElementById("mint-selected-square");
+    const mintSuccessDiv = document.getElementById("mint-success");
+    const personalizeNowLink = document.getElementById("personalize-now");
+    const mintAnotherButton = document.getElementById("mint-another");
     const openWalletButton = document.getElementById("open-wallet-app");
-    const receiptsDiv = document.getElementById("receipts");
+    const txFixtureDiv = document.getElementById("tx-fixture");
+    const { pricing } = getWeb3Config();
+    const txUi = createTxFixture({
+      target: txFixtureDiv,
+      pricing,
+      title: "Mint status",
+    });
     let squareNumber;
     let squarePersonalizations;
     let squareExtra;
+    let lastMintedSquare = null;
+
+    const buildPersonalizeHref = (squareId) => {
+      if (!squareId) return "/personalize";
+      return `/personalize?square=${squareId}#${squareId}`;
+    };
+
+    const showMintState = () => {
+      mintSuccessDiv.style.display = "none";
+      pickASquareDiv.style.display = "block";
+      mintSelectedSquareDiv.style.display = "none";
+      squareNumberInput.value = "";
+      squareNumber = null;
+      txUi.reset();
+    };
+
+    const showSuccessState = (squareId) => {
+      pickASquareDiv.style.display = "none";
+      mintSelectedSquareDiv.style.display = "none";
+      mintSuccessDiv.style.display = "block";
+      const href = buildPersonalizeHref(squareId);
+      personalizeNowLink.href = href;
+    };
 
     // Load square data for availability checks ////////////////////////////////////////////////////////////////////////
     loadSquareData().then(({ personalizations, extra }) => {
@@ -141,6 +183,12 @@ layout: null
       squareNumberWithNumberSignSpan.innerText = "#" + squareNumber;
     });
 
+    if (mintAnotherButton) {
+      mintAnotherButton.addEventListener("click", () => {
+        showMintState();
+      });
+    }
+
     // Handle ?square= query parameter /////////////////////////////////////////////////////////////////////////////////
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.has("square")) {
@@ -173,20 +221,31 @@ layout: null
       if (!squareNumber) {
         return alert("Please enter a Square number.");
       }
+      txUi.startProcessing(`Minting Square #${squareNumber}. Confirm in your wallet to continue.`);
       const doSendTransaction = async (wagmi) => {
-        receiptsDiv.innerHTML = "<p>Sending transaction, waiting for confirmation&hellip;</p>";
+        txUi.setWalletContext({
+          hasSession: hasWalletConnectSession(),
+          isWalletConnect: wagmi?.getAccount?.()?.connector?.id === "walletConnect",
+        });
         let result;
         try {
           result = await purchaseSquare(squareNumber, wagmi);
+          const pendingUrl = buildTxUrl(result.hash);
+          txUi.addPending(result.hash, pendingUrl);
           const transaction = await wagmi.waitForTransaction({ hash: result.hash });
           const txUrl = buildTxUrl(transaction.transactionHash);
-          const txLink = txUrl
-            ? `<a target="_blank" href="${txUrl}">${transaction.transactionHash}</a>`
-            : transaction.transactionHash;
-          receiptsDiv.innerHTML = `<h3>Transaction confirmed</h3><p>Transaction ID: ${txLink}. Next, go to <a href="https://tenthousandsu.com/personalize?square=${squareNumber}">personalize</a> to personalize your Square.</p>`;
+          lastMintedSquare = squareNumber;
+          showSuccessState(squareNumber);
+          const personalizeHref = buildPersonalizeHref(squareNumber);
+          txUi.markSuccess(
+            transaction.transactionHash,
+            txUrl,
+            `Transaction confirmed. Next, go to the <a href="${personalizeHref}" target="_blank" rel="noreferrer" style="text-decoration: underline;">personalize page</a> to personalize your Square.`
+          );
         } catch (error) {
           console.log(error);
-          return alert(error.message);
+          txUi.markError(error?.message || "Transaction failed");
+          return alert(error?.message || "Transaction failed");
         }
       };
       await ensureConnected(async (clients) => {
