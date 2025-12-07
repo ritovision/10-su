@@ -10,13 +10,13 @@
   "theme_color": "#2d3c96",
   "icons": [
     {
-      "src": "10-su/assets/images/icon-192.png",
+      "src": "/assets/images/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "10-su/assets/images/icon-512.png",
+      "src": "/assets/images/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
@@ -26,17 +26,17 @@
     {
       "name": "Personalize your square",
       "short_name": "Personalize",
-      "url": "10-su/personalize"
+      "url": "/personalize"
     },
     {
       "name": "Mint a new square",
       "short_name": "Mint",
-      "url": "10-su/mint"
+      "url": "/buy"
     },
     {
       "name": "See the Homepage",
       "short_name": "Home",
-      "url": "10-su/"
+      "url": "/"
     }
   ]
 }
