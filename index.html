@@ -28,9 +28,22 @@ layout: null
 
   <article>
     <h1 class="home-title">The first <span class="no-break">ERC-721</span> NFT</h1>
-    <p>Click an empty square below to mint an available Su Square (0.5 ETH). Clicking an already minted and personalized
+    <p>Click an empty square below to mint an available Su Square (<span id="mint-price-display">0.5 ETH</span>).
+      Clicking an already minted and personalized
       one will activate its hyperlink.</p>
     <p class="mobile-hint">On mobile, zoom in and scroll</p>
+    <script>
+      // Only update if there's a pricing override to avoid performance tax
+      // Uses DOMContentLoaded because runtime.generated.js is deferred
+      document.addEventListener("DOMContentLoaded", function () {
+        var cfg = window.suWeb3 || window.SU_WEB3 || {};
+        var pricing = cfg.pricing;
+        if (pricing && typeof pricing.mintPriceEth === "number" && pricing.mintPriceEth !== 0.5) {
+          var el = document.getElementById("mint-price-display");
+          if (el) el.textContent = pricing.mintPriceEth + " ETH";
+        }
+      });
+    </script>
     <a id="wheretogo" class="map-container" href="#" target="_blank">
       <div class="map-wrapper">
         <img id="theImage" class="map-image"
