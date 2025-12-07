@@ -235,8 +235,28 @@ layout: null
           positionDiv.style.top = (row * cellSize) + "px";
           positionDiv.style.display = "block";
 
-          tooltipDiv.style.left = positionDiv.style.left;
-          tooltipDiv.style.top = (row * cellSize + cellSize * 3) + "px";
+          // Position tooltip based on which half of the grid the square is in
+          // Left half (columns 0-49): tooltip appears to the right
+          // Right half (columns 50-99): tooltip appears to the left
+          const isLeftHalf = col < GRID_DIMENSION / 2;
+          if (isLeftHalf) {
+            tooltipDiv.style.left = (col * cellSize + cellSize * 1.5) + "px";
+            tooltipDiv.style.right = "auto";
+            tooltipDiv.style.transformOrigin = "left center";
+          } else {
+            tooltipDiv.style.left = "auto";
+            tooltipDiv.style.right = ((GRID_DIMENSION - col - 1) * cellSize + cellSize * 1.5) + "px";
+            tooltipDiv.style.transformOrigin = "right center";
+          }
+          tooltipDiv.style.top = (row * cellSize + cellSize * 0.5) + "px";
+
+          // Scale tooltip with pan-zoom (mobile only)
+          if (panZoom && panZoom.isActive && panZoom.scale) {
+            tooltipDiv.style.transform = `scale(${1 / panZoom.scale})`;
+          } else {
+            tooltipDiv.style.transform = "";
+          }
+
           tooltipDiv.style.display = "block";
         }
 
