@@ -31,7 +31,7 @@ layout: null
     <p>Click an empty square below to mint an available Su Square (<span id="mint-price-display">0.5 ETH</span>).
       Clicking an already minted and personalized
       one will activate its hyperlink.</p>
-    <p class="mobile-hint">On mobile, zoom in and scroll</p>
+    <p class="mobile-hint">Pinch to zoom, drag to pan</p>
     <script>
       // Only update if there's a pricing override to avoid performance tax
       // Uses DOMContentLoaded because runtime.generated.js is deferred
@@ -53,6 +53,7 @@ layout: null
         <div id="electric-fence" class="map-fence"></div>
       </div>
     </a>
+    <button id="map-reset-btn" class="map-reset-btn" type="button">Reset zoom</button>
   </article>
 
   <article class="newly-feed">
@@ -78,7 +79,9 @@ layout: null
       United States.
     </small>
   </footer>
-  <script>
+  <script type="module">
+    import { createPanZoom } from "{{ site.baseurl }}/assets/js/pan-zoom.js";
+
     document.addEventListener("DOMContentLoaded", () => {
       try {
         const baseurl = window.SITE_BASEURL || '';
@@ -106,6 +109,18 @@ layout: null
         const whereToGoAnchor = document.getElementById("wheretogo");
         if (whereToGoAnchor) {
           whereToGoAnchor.removeAttribute("href");
+        }
+
+        // Initialize pan-zoom on the map wrapper (mobile only)
+        const mapWrapper = document.querySelector(".map-wrapper");
+        const panZoom = mapWrapper ? createPanZoom(mapWrapper) : null;
+
+        // Wire up reset button
+        const resetBtn = document.getElementById("map-reset-btn");
+        if (resetBtn && panZoom) {
+          resetBtn.addEventListener("click", () => {
+            panZoom.reset();
+          });
         }
 
         const squarePersonalizationsPromise = fetch(assetPath("squarePersonalizations.json")).then(response => response.json());
@@ -174,6 +189,10 @@ layout: null
         const GRID_DIMENSION = 100;
 
         function getCellSize() {
+          // Use original (pre-transform) dimensions when pan-zoom is active
+          if (mapWrapper && panZoom && panZoom.isActive) {
+            return mapWrapper.offsetWidth / GRID_DIMENSION;
+          }
           const rect = document.getElementById("theImage").getBoundingClientRect();
           return rect.width ? rect.width / GRID_DIMENSION : 10;
         }
@@ -238,16 +257,43 @@ layout: null
           }
         }
 
-        document.getElementById("theImage").addEventListener("mousemove", (e) => {
-          const theImage = document.getElementById("theImage");
-          const rect = theImage.getBoundingClientRect(); // Get the bounding rectangle of the image
+        function getSquareFromPointer(clientX, clientY) {
           const cellSize = getCellSize();
-          const x = Math.min(Math.max(Math.floor((e.clientX - rect.left) / cellSize), 0), GRID_DIMENSION - 1); // Adjust by element's left position
-          const y = Math.min(Math.max(Math.floor((e.clientY - rect.top) / cellSize), 0), GRID_DIMENSION - 1); // Adjust by element's top position
-          const squareNumber = x + y * GRID_DIMENSION + 1;
+          let x, y;
+
+          if (panZoom && panZoom.isActive) {
+            // Convert screen coords to canvas coords
+            const coords = panZoom.screenToCanvas(clientX, clientY);
+            x = Math.min(Math.max(Math.floor(coords.x / cellSize), 0), GRID_DIMENSION - 1);
+            y = Math.min(Math.max(Math.floor(coords.y / cellSize), 0), GRID_DIMENSION - 1);
+          } else {
+            const theImage = document.getElementById("theImage");
+            const rect = theImage.getBoundingClientRect();
+            x = Math.min(Math.max(Math.floor((clientX - rect.left) / cellSize), 0), GRID_DIMENSION - 1);
+            y = Math.min(Math.max(Math.floor((clientY - rect.top) / cellSize), 0), GRID_DIMENSION - 1);
+          }
+
+          return x + y * GRID_DIMENSION + 1;
+        }
+
+        document.getElementById("theImage").addEventListener("mousemove", (e) => {
+          const squareNumber = getSquareFromPointer(e.clientX, e.clientY);
           setPosition(squareNumber);
         });
         document.getElementById("theImage").addEventListener("mouseleave", clearSelection);
+
+        // Touch support for pan-zoom
+        document.getElementById("theImage").addEventListener("touchend", (e) => {
+          // Suppress selection if user was panning/zooming
+          if (panZoom && panZoom.hasPanned && panZoom.hasPanned()) {
+            return;
+          }
+          if (e.changedTouches && e.changedTouches[0]) {
+            const touch = e.changedTouches[0];
+            const squareNumber = getSquareFromPointer(touch.clientX, touch.clientY);
+            setPosition(squareNumber);
+          }
+        });
 
         document.addEventListener("keydown", (e) => {
           const key = e.key.toLowerCase();
@@ -269,6 +315,12 @@ layout: null
         });
 
         function handleWhereToGoClick(event) {
+          // Suppress click if user was panning/zooming
+          if (panZoom && panZoom.hasPanned && panZoom.hasPanned()) {
+            event.preventDefault();
+            return;
+          }
+
           if (!whereToGoAnchor) {
             return;
           }
