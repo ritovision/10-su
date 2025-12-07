@@ -4,6 +4,7 @@ url: https://ritovision.github.io
 
 # Exclude directories from Jekyll processing
 exclude:
+  - erc721
   - vendor/
   - cmds
   - README.md
