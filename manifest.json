@@ -15,30 +15,51 @@
       "src": "/10-su/assets/images/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "maskable"
     },
     {
       "src": "/10-su/assets/images/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "maskable"
     }
   ],
   "shortcuts": [
     {
       "name": "Personalize your square",
       "short_name": "Personalize",
-      "url": "/10-su/personalize"
+      "url": "/10-su/personalize",
+      "icons": [
+        {
+          "src": "/10-su/assets/images/blue-icon-96.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
     },
     {
       "name": "Mint a new square",
       "short_name": "Mint",
-      "url": "/10-su/buy"
+      "url": "/10-su/buy",
+      "icons": [
+        {
+          "src": "/10-su/assets/images/pink-icon-96.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
     },
     {
       "name": "See the Homepage",
       "short_name": "Home",
-      "url": "/10-su/"
+      "url": "/10-su/",
+      "icons": [
+        {
+          "src": "/10-su/assets/images/yellow-icon-96.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
     }
   ]
 }
