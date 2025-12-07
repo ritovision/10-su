@@ -285,6 +285,15 @@ layout: null
       };
       await ensureConnected(async (clients) => {
         await ensureCorrectNetwork(clients);
+        const { activeNetwork } = getWeb3Config();
+        const account = clients.getAccount?.();
+        if (account?.address) {
+          txUi.setBalanceContext({
+            address: account.address,
+            chainId: activeNetwork.chainId,
+            fetcher: (addr, chain) => clients.fetchBalance({ address: addr, chainId: chain }),
+          });
+        }
         await doSendTransaction(clients);
       });
     });
