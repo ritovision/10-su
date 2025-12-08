@@ -48,12 +48,16 @@ layout: null
     </div>
 
     <h2>Location</h2>
-    <div class="square-location">
-      <div class="square-location__canvas">
-        <img id="theImage" class="square-location__image"
-          src="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" alt="All Su Squares">
-        <img id="arrow" class="square-location__arrow" src="assets/images/dr.png" alt="Location">
+    <div class="square-location-wrapper">
+      <div class="square-location">
+        <div class="square-location__canvas">
+          <img id="theImage" class="square-location__image"
+            src="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" alt="All Su Squares">
+          <img id="arrow" class="square-location__arrow" src="assets/images/dr.png" alt="Location">
+        </div>
       </div>
+      <p class="square-location__mobile-hint">Pinch to zoom, drag to pan.</p>
+      <button type="button" class="square-location__reset-btn" id="location-reset-btn" style="display:none;">Reset zoom</button>
     </div>
 
     <h2>Emojified</h2>
@@ -76,6 +80,7 @@ layout: null
   <script type="module">
     import { buildBlockUrl, buildTokenUrl, getExplorerName } from "{{ site.baseurl }}/assets/web3/services/explorer-links.js";
     import { getWeb3Config } from "{{ site.baseurl }}/assets/web3/config/index.js";
+    import { createPanZoom } from "{{ site.baseurl }}/assets/js/pan-zoom.js";
 
     document.addEventListener("DOMContentLoaded", () => {
       const baseurl = window.SITE_BASEURL || '';
@@ -221,6 +226,21 @@ layout: null
 
         // Initial positioning
         updateArrowPosition();
+
+        // Initialize panzoom on touch devices
+        const elLocationCanvas = document.querySelector('.square-location__canvas');
+        const panZoom = createPanZoom(elLocationCanvas);
+
+        // Show reset button if on touch device
+        if (panZoom && panZoom.isActive) {
+          const resetBtn = document.getElementById('location-reset-btn');
+          if (resetBtn) {
+            resetBtn.style.display = 'block';
+            resetBtn.addEventListener('click', () => {
+              panZoom.reset();
+            });
+          }
+        }
 
         // Update on window resize
         window.addEventListener('resize', updateArrowPosition);
