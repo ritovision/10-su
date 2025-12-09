@@ -11,9 +11,9 @@ layout: null
   {% include pwa-meta-tags.html %}
   <title>Su Squares, cute squares you own and personalize</title>
   <meta name="description" content="The first ERC-721 NFT. Cute squares you own and personalize.">
-  <link rel="stylesheet" href="assets/css/main.css">
-  <link rel="stylesheet" href="assets/css/square.css">
-  <link rel="stylesheet" href="assets/css/chooser.css">
+  <link rel="stylesheet" href="{{ site.baseurl }}/assets/css/main.css">
+  <link rel="stylesheet" href="{{ site.baseurl }}/assets/css/square.css">
+  <link rel="stylesheet" href="{{ site.baseurl }}/assets/css/chooser.css">
   <link rel="stylesheet" href="{{ site.baseurl }}/assets/modals/leaving-modal/modal.css">
   <script src="{{ site.baseurl }}/assets/modals/leaving-modal/modal-core.js"></script>
   <script src="{{ site.baseurl }}/assets/modals/leaving-modal/link-guard.js"></script>
@@ -53,7 +53,7 @@ layout: null
         <div class="square-location__canvas">
           <img id="theImage" class="square-location__image"
             src="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" alt="All Su Squares">
-          <img id="arrow" class="square-location__arrow" src="assets/images/dr.png" alt="Location">
+          <img id="arrow" class="square-location__arrow" src="{{ site.baseurl }}/assets/images/dr.png" alt="Location">
         </div>
       </div>
       <p class="square-location__mobile-hint">Pinch to zoom, drag to pan.</p>
