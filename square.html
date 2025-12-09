@@ -25,7 +25,14 @@ layout: null
 <body>
   {% include nav-header.html %}
 
-  <article class="square-page">
+  <section class="square-default-state" id="square-default-state">
+    <h1>Look up Su Squares</h1>
+    <p class="square-default-state__description">
+      Enter a minted square number to review its appearance and history.
+    </p>
+  </section>
+
+  <article class="square-page square-page--hidden" id="square-details" aria-hidden="true">
     <h1>Square #<span id="square-number">...</span></h1>
     <div id="image"></div>
 
@@ -94,8 +101,41 @@ layout: null
       }
       const assetPath = (rel) => `${assetBase}/${String(rel).replace(/^\/+/, "")}`;
 
-      // Get URL fragment
-      const squareNumber = parseInt(window.location.hash.substring(1));
+      const detailSection = document.getElementById("square-details");
+      const defaultSection = document.getElementById("square-default-state");
+
+      const hideDetails = () => {
+        if (detailSection) {
+          detailSection.classList.add("square-page--hidden");
+          detailSection.setAttribute("aria-hidden", "true");
+        }
+        if (defaultSection) {
+          defaultSection.hidden = false;
+        }
+      };
+
+      const revealDetails = () => {
+        if (detailSection) {
+          detailSection.classList.remove("square-page--hidden");
+          detailSection.removeAttribute("aria-hidden");
+        }
+        if (defaultSection) {
+          defaultSection.hidden = true;
+        }
+      };
+
+      const hashValue = window.location.hash.replace(/^#/, "").trim();
+      const isNumericHash = /^\d+$/.test(hashValue);
+      const squareNumber = isNumericHash ? parseInt(hashValue, 10) : NaN;
+      const hasValidHash = Number.isInteger(squareNumber) && squareNumber >= 1 && squareNumber <= 10000;
+
+      if (!hasValidHash) {
+        hideDetails();
+        return;
+      }
+
+      revealDetails();
+
       const personalizations = fetch(assetPath('squarePersonalizations.json')).then(response => response.json());
       const extras = fetch(assetPath('squareExtra.json')).then(response => response.json());
       const explorerName = getExplorerName();
