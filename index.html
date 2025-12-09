@@ -1,5 +1,7 @@
 ---
 layout: null
+image: "{{ site.baseurl }}/assets/images/su-OG.png"
+title: Billboard homepage
 ---
 <!doctype html>
 <html lang="en">
@@ -9,12 +11,12 @@ layout: null
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   {% include pwa-meta-tags.html %}
-  <title>Su Squares, cute squares you own and personalize</title>
-  <meta name="description" content="The first ERC-721 NFT. Cute squares you own and personalize.">
+  {% seo %}
+  <meta name="description" content="The first ERC-721 NFT. Cute squares you own and personalize for the homepage.">
   <link rel="canonical" href="https://tenthousandsu.com" />
   <link rel="stylesheet" href="{{ site.baseurl }}/assets/css/main.css">
   <link rel="stylesheet" href="{{ site.baseurl }}/assets/css/index.css">
-  <link rel="stylesheet" href="{{ site.baseurl }}/assets/css/chooser.css">
+  <link rel="stylesheet" href="{{ site.baseurl }}/assets/square-lookup/styles.css">
   {% include nav-menu-head.html %}
   {% include alert-modal-head.html %}
   {% include offline-modal-head.html %}
@@ -435,7 +437,7 @@ layout: null
       }
     });
   </script>
-  <script type="module" src="{{ site.baseurl }}/assets/js/square-lookup.js"></script>
+  <script type="module" src="{{ site.baseurl }}/assets/square-lookup/index.js"></script>
   <script src="{{ site.baseurl }}/assets/js/pwa-init.js"></script>
 </body>
 
