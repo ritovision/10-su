@@ -1,5 +1,6 @@
 ---
 layout: null
+image: "{{ site.baseurl }}/assets/images/su-OG.png"
 ---
 <!doctype html>
 <html lang="en">
@@ -9,11 +10,12 @@ layout: null
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   {% include pwa-meta-tags.html %}
-  <title>Su Squares, cute squares you own and personalize</title>
+  {% seo %}
+  <title>See information about a Square</title>
   <meta name="description" content="The first ERC-721 NFT. Cute squares you own and personalize.">
   <link rel="stylesheet" href="{{ site.baseurl }}/assets/css/main.css">
   <link rel="stylesheet" href="{{ site.baseurl }}/assets/css/square.css">
-  <link rel="stylesheet" href="{{ site.baseurl }}/assets/css/chooser.css">
+  <link rel="stylesheet" href="{{ site.baseurl }}/assets/square-lookup/styles.css">
   <link rel="stylesheet" href="{{ site.baseurl }}/assets/modals/leaving-modal/modal.css">
   <script src="{{ site.baseurl }}/assets/modals/leaving-modal/modal-core.js"></script>
   <script src="{{ site.baseurl }}/assets/modals/leaving-modal/link-guard.js"></script>
@@ -26,7 +28,7 @@ layout: null
   {% include nav-header.html %}
 
   <section class="square-default-state" id="square-default-state">
-    <h1>Look up Su Squares</h1>
+    <h1>Look up <span style="white-space: nowrap;">Su Squares</span></h1>
     <p class="square-default-state__description">
       Enter a minted square number to review its appearance and history.
     </p>
@@ -356,7 +358,7 @@ layout: null
       });
     });
   </script>
-  <script type="module" src="{{ site.baseurl }}/assets/js/square-lookup.js"></script>
+  <script type="module" src="{{ site.baseurl }}/assets/square-lookup/index.js"></script>
   <script src="{{ site.baseurl }}/assets/js/pwa-init.js"></script>
 </body>
 
