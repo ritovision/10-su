@@ -12,9 +12,9 @@ layout: null
   <title>Su Squares, cute squares you own and personalize</title>
   <meta name="description" content="The first ERC-721 NFT. Cute squares you own and personalize.">
   <link rel="canonical" href="https://tenthousandsu.com" />
-  <link rel="stylesheet" href="assets/css/main.css">
-  <link rel="stylesheet" href="assets/css/index.css">
-  <link rel="stylesheet" href="assets/css/chooser.css">
+  <link rel="stylesheet" href="{{ site.baseurl }}/assets/css/main.css">
+  <link rel="stylesheet" href="{{ site.baseurl }}/assets/css/index.css">
+  <link rel="stylesheet" href="{{ site.baseurl }}/assets/css/chooser.css">
   {% include nav-menu-head.html %}
   {% include alert-modal-head.html %}
   {% include offline-modal-head.html %}
@@ -156,7 +156,7 @@ layout: null
               const thumbUrl = assetPath("wholeSquare.png");
               newlyMintedList.insertAdjacentHTML(
                 "beforeend",
-                `<a class="newly-feed__item" href="/square#${squareNumber}">
+                `<a class="newly-feed__item" href="${baseurl}/square#${squareNumber}">
                   <span class="newly-feed__thumb" style="background-image:url('${thumbUrl}'); background-position:${-col * 10}px ${-row * 10}px;"></span>
                   <p>#${squareNumber}</p>
                 </a>`
@@ -175,7 +175,7 @@ layout: null
               const thumbUrl = assetPath("wholeSquare.png");
               newlyPersonalizedList.insertAdjacentHTML(
                 "beforeend",
-                `<a class="newly-feed__item" href="/square#${squareNumber}">
+                `<a class="newly-feed__item" href="${baseurl}/square#${squareNumber}">
                   <span class="newly-feed__thumb" style="background-image:url('${thumbUrl}'); background-position:${-col * 10}px ${-row * 10}px;"></span>
                   <p>#${squareNumber}</p>
                 </a>`
@@ -214,7 +214,7 @@ layout: null
           if (!squarePersonalizations[squareNumber - 1]) {
             document.getElementById("theImage").style.cursor = "pointer";
             tooltipDiv.textContent = "Square #" + squareNumber + " is available for sale, click to buy.";
-            whereToGoAnchor.href = "buy?square=" + squareNumber;
+            whereToGoAnchor.href = baseurl + "/buy?square=" + squareNumber;
           } else if (!squarePersonalizations[squareNumber - 1][0] && !squarePersonalizations[squareNumber - 1][1]) {
             document.getElementById("theImage").style.cursor = "not-allowed";
             tooltipDiv.textContent = "Square #" + squareNumber + " WAS PURCHASED BUT NOT YET PERSONALIZED";
