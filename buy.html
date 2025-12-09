@@ -81,8 +81,6 @@ layout: null
     import { getWeb3Config } from "{{ site.baseurl }}/assets/web3/config.js";
     import { purchaseSquare } from "{{ site.baseurl }}/assets/web3/services/primary.js";
     import { buildTxUrl } from "{{ site.baseurl }}/assets/web3/services/explorer-links.js";
-    import { attachListChooser } from "{{ site.baseurl }}/assets/js/choosers/list-chooser.js";
-    import { attachCanvasChooser } from "{{ site.baseurl }}/assets/js/choosers/canvas-chooser.js";
     import { loadSquareData } from "{{ site.baseurl }}/assets/js/square-data.js";
 
     // Elements and state //////////////////////////////////////////////////////////////////////////////////////////////
@@ -143,22 +141,64 @@ layout: null
 
     // Attach choosers /////////////////////////////////////////////////////////////////////////////////////////////////
     if (chooseListButton) {
-      attachListChooser({
-        input: squareNumberInput,
-        trigger: chooseListButton,
-        filter: (_id, ctx) => !ctx.extra, // only unminted
-        title: "Choose an available Square",
-        description: "Only unminted Squares are shown.",
-      });
+      let listChooserHandle;
+      const ensureListChooser = async () => {
+        if (listChooserHandle) return listChooserHandle;
+        const module = await import(`${baseurl}/assets/js/choosers/list-chooser.js`);
+        listChooserHandle = module.attachListChooser({
+          input: squareNumberInput,
+          trigger: chooseListButton,
+          filter: (_id, ctx) => !ctx.extra,
+          title: "Choose an available Square",
+          description: "Only unminted Squares are shown.",
+        });
+        return listChooserHandle;
+      };
+
+      const handleChooseListClick = async (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        try {
+          const chooser = await ensureListChooser();
+          chooser.open();
+          chooseListButton.removeEventListener("click", handleChooseListClick);
+        } catch (error) {
+          console.error("Failed to load the list chooser", error);
+          alert("Unable to open the chooser right now.");
+        }
+      };
+
+      chooseListButton.addEventListener("click", handleChooseListClick);
     }
 
     if (chooseCanvasButton) {
-      attachCanvasChooser({
-        input: squareNumberInput,
-        trigger: chooseCanvasButton,
-        filter: (_id, ctx) => !ctx.extra, // only unminted
-        title: "Choose square from canvas",
-      });
+      let canvasChooserHandle;
+      const ensureCanvasChooser = async () => {
+        if (canvasChooserHandle) return canvasChooserHandle;
+        const module = await import(`${baseurl}/assets/js/choosers/canvas-chooser.js`);
+        canvasChooserHandle = module.attachCanvasChooser({
+          input: squareNumberInput,
+          trigger: chooseCanvasButton,
+          filter: (_id, ctx) => !ctx.extra, // only unminted
+          title: "Choose square from canvas",
+        });
+        return canvasChooserHandle;
+      };
+
+      const handleChooseCanvasClick = async (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        try {
+          const chooser = await ensureCanvasChooser();
+          chooser.open();
+          chooseCanvasButton.removeEventListener("click", handleChooseCanvasClick);
+        } catch (error) {
+          console.error("Failed to load the canvas chooser", error);
+          alert("Unable to open the chooser right now.");
+        }
+      };
+
+      chooseCanvasButton.addEventListener("click", handleChooseCanvasClick);
     }
 
     // Validate Square number //////////////////////////////////////////////////////////////////////////////////////////
