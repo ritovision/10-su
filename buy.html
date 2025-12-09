@@ -1,5 +1,6 @@
 ---
 layout: null
+image: "{{ site.baseurl }}/assets/images/su-OG.png"
 ---
 <!doctype html>
 <html lang="en" class="mint-page">
@@ -9,11 +10,12 @@ layout: null
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   {% include pwa-meta-tags.html %}
-  <title>Su Squares, mint a square</title>
+  {% seo %}
+  <title>Buy a Square and claim a spot on the homepage</title>
   <link rel="canonical" href="https://tenthousandsu.com/buy" />
   <link rel="stylesheet" href="{{ site.baseurl }}/assets/css/main.css">
   <link rel="stylesheet" href="{{ site.baseurl }}/assets/css/buy.css">
-  <link rel="stylesheet" href="{{ site.baseurl }}/assets/css/chooser.css">
+  <link rel="stylesheet" href="{{ site.baseurl }}/assets/square-lookup/styles.css">
   <link rel="stylesheet" href="{{ site.baseurl }}/assets/web3/tx/styles.css">
   {% include nav-menu-head.html %}
   {% include alert-modal-head.html %}
@@ -35,7 +37,7 @@ layout: null
         <input id="square-number" type="number" min="1" max="10000" required style="width:7em" placeholder="e.g. 2345">
         <div class="square-lookup__actions">
           <button id="square-choose-list" type="button">Choose from list</button>
-          <button id="square-choose-canvas" type="button">Choose from canvas</button>
+          <button id="square-choose-billboard" type="button">Choose from billboard</button>
         </div>
       </div>
       <button id="select-square" type="button" class="btn btn-lg">Select Square</button>
@@ -87,7 +89,7 @@ layout: null
     const squareNumberWithNumberSignSpan = document.getElementById("square-number-with-number-sign");
     const squareNumberInput = document.getElementById("square-number");
     const chooseListButton = document.getElementById("square-choose-list");
-    const chooseCanvasButton = document.getElementById("square-choose-canvas");
+    const chooseBillboardButton = document.getElementById("square-choose-billboard");
     const mintButton = document.getElementById("mint");
     const pickASquareDiv = document.getElementById("pick-a-square");
     const mintSelectedSquareDiv = document.getElementById("mint-selected-square");
@@ -111,7 +113,7 @@ layout: null
     const baseurl = window.SITE_BASEURL || '';
     const buildPersonalizeHref = (squareId) => {
       if (!squareId) return baseurl + "/personalize";
-      return `${baseurl}/personalize?square=${squareId}#${squareId}`;
+      return `${baseurl}/personalize?square=${squareId}`;
     };
 
     const showMintState = () => {
@@ -144,7 +146,7 @@ layout: null
       let listChooserHandle;
       const ensureListChooser = async () => {
         if (listChooserHandle) return listChooserHandle;
-        const module = await import(`${baseurl}/assets/js/choosers/list-chooser.js`);
+        const module = await import(`${baseurl}/assets/square-lookup/choosers/list.js`);
         listChooserHandle = module.attachListChooser({
           input: squareNumberInput,
           trigger: chooseListButton,
@@ -171,34 +173,34 @@ layout: null
       chooseListButton.addEventListener("click", handleChooseListClick);
     }
 
-    if (chooseCanvasButton) {
-      let canvasChooserHandle;
-      const ensureCanvasChooser = async () => {
-        if (canvasChooserHandle) return canvasChooserHandle;
-        const module = await import(`${baseurl}/assets/js/choosers/canvas-chooser.js`);
-        canvasChooserHandle = module.attachCanvasChooser({
+    if (chooseBillboardButton) {
+      let billboardChooserHandle;
+      const ensureBillboardChooser = async () => {
+        if (billboardChooserHandle) return billboardChooserHandle;
+        const module = await import(`${baseurl}/assets/square-lookup/choosers/billboard.js`);
+        billboardChooserHandle = module.attachBillboardChooser({
           input: squareNumberInput,
-          trigger: chooseCanvasButton,
+          trigger: chooseBillboardButton,
           filter: (_id, ctx) => !ctx.extra, // only unminted
-          title: "Choose square from canvas",
+          title: "Choose square from billboard",
         });
-        return canvasChooserHandle;
+        return billboardChooserHandle;
       };
 
-      const handleChooseCanvasClick = async (event) => {
+      const handleChooseBillboardClick = async (event) => {
         event.preventDefault();
         event.stopPropagation();
         try {
-          const chooser = await ensureCanvasChooser();
+          const chooser = await ensureBillboardChooser();
           chooser.open();
-          chooseCanvasButton.removeEventListener("click", handleChooseCanvasClick);
+          chooseBillboardButton.removeEventListener("click", handleChooseBillboardClick);
         } catch (error) {
-          console.error("Failed to load the canvas chooser", error);
+          console.error("Failed to load the billboard chooser", error);
           alert("Unable to open the chooser right now.");
         }
       };
 
-      chooseCanvasButton.addEventListener("click", handleChooseCanvasClick);
+      chooseBillboardButton.addEventListener("click", handleChooseBillboardClick);
     }
 
     // Validate Square number //////////////////////////////////////////////////////////////////////////////////////////
