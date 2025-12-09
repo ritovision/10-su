@@ -11,16 +11,16 @@ layout: null
   {% include pwa-meta-tags.html %}
   <title>Su Squares, personalize</title>
   <link rel="canonical" href="https://tenthousandsu.com/personalize" />
-  <link rel="stylesheet" href="assets/css/main.css">
-  <link rel="stylesheet" href="assets/css/personalize.css">
-  <link rel="stylesheet" href="assets/web3/tx/styles.css">
+  <link rel="stylesheet" href="{{ site.baseurl }}/assets/css/main.css">
+  <link rel="stylesheet" href="{{ site.baseurl }}/assets/css/personalize.css">
+  <link rel="stylesheet" href="{{ site.baseurl }}/assets/web3/tx/styles.css">
   {% include nav-menu-head.html %}
   {% include alert-modal-head.html %}
   {% include offline-modal-head.html %}
 </head>
 
 <body>
-  {% include nav-header.html desktop_button_one_label="Mint" desktop_button_one_href="/buy" %}
+  {% include nav-header.html desktop_button_one_label="Mint" desktop_button_one_href="{{ site.baseurl }}/buy" %}
 
   <article class="lead">
     <h1>Personalize</h1>
@@ -31,7 +31,7 @@ layout: null
     </p>
     <p>
       Use this page to personalize a Su Square you own on TenThousandSu.com. To personalize many squares, try the <a
-        href="personalize-batch">batch tool</a>. If your Square was previously personalized using the old, more
+        href="{{ site.baseurl }}/personalize-batch">batch tool</a>. If your Square was previously personalized using the old, more
       expensive method you will need to <a href="#" id="open-unpersonalize-modal">unpersonalize</a>
       it first.
     </p>

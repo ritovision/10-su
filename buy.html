@@ -11,17 +11,17 @@ layout: null
   {% include pwa-meta-tags.html %}
   <title>Su Squares, mint a square</title>
   <link rel="canonical" href="https://tenthousandsu.com/buy" />
-  <link rel="stylesheet" href="assets/css/main.css">
-  <link rel="stylesheet" href="assets/css/buy.css">
-  <link rel="stylesheet" href="assets/css/chooser.css">
-  <link rel="stylesheet" href="assets/web3/tx/styles.css">
+  <link rel="stylesheet" href="{{ site.baseurl }}/assets/css/main.css">
+  <link rel="stylesheet" href="{{ site.baseurl }}/assets/css/buy.css">
+  <link rel="stylesheet" href="{{ site.baseurl }}/assets/css/chooser.css">
+  <link rel="stylesheet" href="{{ site.baseurl }}/assets/web3/tx/styles.css">
   {% include nav-menu-head.html %}
   {% include alert-modal-head.html %}
   {% include offline-modal-head.html %}
 </head>
 
 <body>
-  {% include nav-header.html desktop_button_one_label="Personalize" desktop_button_one_href="/personalize" %}
+  {% include nav-header.html desktop_button_one_label="Personalize" desktop_button_one_href="{{ site.baseurl }}/personalize" %}
   <article class="lead">
     <h1>Mint Su Squares <span id="square-number-with-number-sign"></span></h1>
     <p><em>If you have a question, please mail <a
@@ -110,9 +110,10 @@ layout: null
     let squareExtra;
     let lastMintedSquare = null;
 
+    const baseurl = window.SITE_BASEURL || '';
     const buildPersonalizeHref = (squareId) => {
-      if (!squareId) return "/personalize";
-      return `/personalize?square=${squareId}#${squareId}`;
+      if (!squareId) return baseurl + "/personalize";
+      return `${baseurl}/personalize?square=${squareId}#${squareId}`;
     };
 
     const showMintState = () => {
