@@ -71,6 +71,77 @@ title: Billboard homepage
 
   {% include square-lookup.html %}
 
+  <section class="developer-learning" aria-labelledby="developer-learning-title">
+    <div class="developer-learning__inner">
+      <h2 id="developer-learning-title" class="developer-learning__title">Developer Learning</h2>
+      <p class="developer-learning__subtitle">Learn the technicals behind how this historic project works.</p>
+
+      <p class="developer-learning__intro">
+        Su Squares is much more than a historic collectible billboard on Ethereum... it’s a complete, open-source project you can study,
+        run, and modify yourself. The same GitHub repository that powers this live Jekyll site also contains the smart
+        contracts, local blockchain setup, UI library, and tests that make the project work end-to-end.
+      </p>
+
+      <p class="developer-learning__lead">Inside the repo you can:</p>
+
+      <div class="developer-learning__grid">
+        <section class="developer-learning__item">
+          <h3 class="developer-learning__item-title">Run the full site locally</h3>
+          <p class="developer-learning__item-body">
+            Spin up your own Su Squares site offline, including a private local Ethereum-like network configured for you.
+            You can experiment safely without touching mainnet or spending real ETH.
+          </p>
+        </section>
+
+        <section class="developer-learning__item">
+          <h3 class="developer-learning__item-title">Explore the smart contracts in depth</h3>
+          <p class="developer-learning__item-body">
+            Inspect the two contracts that power Su Squares on Ethereum and call them using accessible scripts and npm
+            tasks—no need to write raw <code>eth_call</code> or RPC by hand.
+          </p>
+        </section>
+
+        <section class="developer-learning__item">
+          <h3 class="developer-learning__item-title">See the full UI in Storybook</h3>
+          <p class="developer-learning__item-body">
+            Browse the production UI components in isolation: the billboard, square lookup tools, choosers, wallet and
+            transaction modals, offline banner, nav, and more. It’s the live interface broken down into testable, reusable
+            pieces.
+          </p>
+        </section>
+
+        <section class="developer-learning__item">
+          <h3 class="developer-learning__item-title">Run automated tests like a real dapp team</h3>
+          <p class="developer-learning__item-body">
+            Use Playwright to run end-to-end browser tests against the app, and Vitest to validate helper logic and
+            behavior. You can watch how a production NFT project wires testing around contracts and UI.
+          </p>
+        </section>
+
+        <section class="developer-learning__item developer-learning__item--full">
+          <h3 class="developer-learning__item-title">Understand the build and tooling stack</h3>
+          <p class="developer-learning__item-body">
+            Examine the Node.js workspaces that handle contracts, local network scripts, UI tooling, and test runners,
+            alongside the Jekyll code that renders this very site. Everything is wired so you can clone, install
+            dependencies, and follow the same commands we use.
+          </p>
+        </section>
+      </div>
+
+      <a
+        class="developer-learning__cta"
+        href="https://github.com/su-squares/tenthousandsu.com"
+        target="_blank"
+        rel="noreferrer"
+      >
+        <span class="developer-learning__cta-text">View on GitHub</span>
+        <span class="developer-learning__cta-icon" aria-hidden="true">
+          <img src="{{ site.baseurl }}/assets/images/github-logo.svg" alt="GitHub" />
+        </span>
+      </a>
+    </div>
+  </section>
+
   <footer>
     <small>
       No cookies. No analytics. Not responsible for content of linked sites. Images shown on homepage are &copy; their
