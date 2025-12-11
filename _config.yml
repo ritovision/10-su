@@ -1,6 +1,6 @@
 # Site settings
-baseurl: ""
-url: https://tenthousandsu.com
+baseurl: /10-su
+url: https://ritovision.github.io
 
 # Exclude directories from Jekyll processing
 ## uncomment / exclude the erc721 folders during development to speed up builds
