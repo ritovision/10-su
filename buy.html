@@ -148,7 +148,7 @@ image: "{{ site.baseurl }}/assets/images/su-OG.png"
       let listChooserHandle;
       const ensureListChooser = async () => {
         if (listChooserHandle) return listChooserHandle;
-        const module = await import(`${baseurl}/assets/square-lookup/choosers/list.js`);
+        const module = await import(`${baseurl}/assets/square-lookup/list.js`);
         listChooserHandle = module.attachListChooser({
           input: squareNumberInput,
           trigger: chooseListButton,
@@ -179,7 +179,7 @@ image: "{{ site.baseurl }}/assets/images/su-OG.png"
       let billboardChooserHandle;
       const ensureBillboardChooser = async () => {
         if (billboardChooserHandle) return billboardChooserHandle;
-        const module = await import(`${baseurl}/assets/square-lookup/choosers/billboard.js`);
+        const module = await import(`${baseurl}/assets/billboard/wrappers/modal-chooser.js`);
         billboardChooserHandle = module.attachBillboardChooser({
           input: squareNumberInput,
           trigger: chooseBillboardButton,

@@ -15,6 +15,7 @@ image: "{{ site.baseurl }}/assets/images/su-OG.png"
   <meta name="description" content="The first ERC-721 NFT. Cute squares you own and personalize.">
   <link rel="stylesheet" href="{{ site.baseurl }}/assets/css/main.css">
   <link rel="stylesheet" href="{{ site.baseurl }}/assets/css/square.css">
+  <link rel="stylesheet" href="{{ site.baseurl }}/assets/billboard/wrappers/square-location.css">
   <link rel="stylesheet" href="{{ site.baseurl }}/assets/square-lookup/styles.css">
   <link rel="stylesheet" href="{{ site.baseurl }}/assets/modals/leaving-modal/modal.css">
   <script src="{{ site.baseurl }}/assets/modals/leaving-modal/modal-core.js"></script>
@@ -41,7 +42,7 @@ image: "{{ site.baseurl }}/assets/images/su-OG.png"
     <div id="image"></div>
 
     <div class="dl-wrapper">
-      <dl class="dl-styled">
+      <dl class="dl-styled" data-testid="square-nft-table">
         <dt>Minted</dt>
         <dd id="minted"></dd>
         <dt>Personalized</dt>
@@ -72,7 +73,7 @@ image: "{{ site.baseurl }}/assets/images/su-OG.png"
     </div>
 
     <h2>Emojified</h2>
-    <pre id="emojified"></pre>
+    <pre id="emojified" data-testid="square-emojified"></pre>
     <button class="btn" id="copy-emojified">Copy</button>
   </article>
 
@@ -91,7 +92,7 @@ image: "{{ site.baseurl }}/assets/images/su-OG.png"
   <script type="module">
     import { buildBlockUrl, buildTokenUrl, getExplorerName } from "{{ site.baseurl }}/assets/web3/services/explorer-links.js";
     import { getWeb3Config } from "{{ site.baseurl }}/assets/web3/config/index.js";
-    import { createPanZoom } from "{{ site.baseurl }}/assets/js/pan-zoom.js";
+    import { initSquareLocation } from "{{ site.baseurl }}/assets/billboard/wrappers/square-location.js";
 
     document.addEventListener("DOMContentLoaded", () => {
       const baseurl = window.SITE_BASEURL || '';
@@ -230,64 +231,20 @@ image: "{{ site.baseurl }}/assets/images/su-OG.png"
         elImage.style.zoom = '20';
         elImage.style.imageRendering = 'pixelated';
 
-        // Set arrow location, based on quadrant
-        const elArrow = document.getElementById('arrow');
-        const elCanvas = document.querySelector('.square-location__canvas');
+        // Initialize location view with arrow positioning
         const mapImage = document.getElementById('theImage');
         if (mapImage) {
           mapImage.src = assetPath('wholeSquare.png');
         }
 
-        const updateArrowPosition = () => {
-          // Get actual rendered size and calculate scale factor
-          const actualWidth = elCanvas.offsetWidth;
-          const originalSize = 1000; // Original image is 1000x1000px
-          const dynamicScale = actualWidth / originalSize;
-
-          const scalePosition = (value) => `${value * dynamicScale}px`;
-          const setArrow = (src, topPx, leftPx) => {
-            elArrow.src = src;
-            elArrow.style.top = scalePosition(topPx);
-            elArrow.style.left = scalePosition(leftPx);
-          };
-          elArrow.style.width = `${100 * dynamicScale}px`;
-          elArrow.style.height = `${100 * dynamicScale}px`;
-
-          if (row < 50) {
-            if (col < 50) {
-              setArrow('assets/images/ul.png', row * 10 + 10, col * 10 + 10);
-            } else {
-              setArrow('assets/images/ur.png', row * 10 + 10, col * 10 - 100);
-            }
-          } else {
-            if (col < 50) {
-              setArrow('assets/images/dl.png', row * 10 - 100, col * 10 + 10);
-            } else {
-              setArrow('assets/images/dr.png', row * 10 - 100, col * 10 - 100);
-            }
-          }
-        };
-
-        // Initial positioning
-        updateArrowPosition();
-
-        // Initialize panzoom on touch devices
-        const elLocationCanvas = document.querySelector('.square-location__canvas');
-        const panZoom = createPanZoom(elLocationCanvas);
-
-        // Show reset button if on touch device
-        if (panZoom && panZoom.isActive) {
-          const resetBtn = document.getElementById('location-reset-btn');
-          if (resetBtn) {
-            resetBtn.style.display = 'block';
-            resetBtn.addEventListener('click', () => {
-              panZoom.reset();
-            });
-          }
-        }
-
-        // Update on window resize
-        window.addEventListener('resize', updateArrowPosition);
+        initSquareLocation({
+          canvas: document.querySelector('.square-location__canvas'),
+          image: mapImage,
+          arrow: document.getElementById('arrow'),
+          resetButton: document.getElementById('location-reset-btn'),
+          squareNumber,
+          arrowBasePath: 'assets/images',
+        });
 
         // Emoji squares and RGB values for ⬛⬜🟥🟧🟨🟩🟦🟪🟫
         const emojis = [
