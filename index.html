@@ -50,8 +50,12 @@ title: Billboard homepage
     </script>
     <a id="wheretogo" class="map-container" href="#" target="_blank">
       <div class="map-wrapper">
-        <img id="theImage" class="map-image"
-          src="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" alt="All Su Squares">
+        <img
+          id="theImage"
+          class="map-image"
+          src="{{ site.baseurl }}/build/wholeSquare.png"
+          alt="All Su Squares"
+        >
         <div id="position" class="map-position"></div>
         <div id="tooltip" class="map-tooltip"></div>
         <div id="electric-fence" class="map-fence"></div>
@@ -171,6 +175,7 @@ title: Billboard homepage
         const assetPath = (rel) => `${assetBase}/${String(rel).replace(/^\/+/, "")}`;
 
         const normalizeHref = window.suNormalizeHref || ((href) => href); // fallback if helper not loaded
+        const GRID_DIMENSION = 100;
 
         let positionSquareNumber = 1;
         let hasActiveSelection = false;
@@ -189,6 +194,36 @@ title: Billboard homepage
         // Initialize pan-zoom on the map wrapper (mobile only)
         const mapWrapper = document.querySelector(".map-wrapper");
         const panZoom = mapWrapper ? createPanZoom(mapWrapper) : null;
+        let grid = null;
+        const gridCells = [];
+        let activeGridCell = null;
+        let tabStopCell = null;
+
+        if (mapWrapper) {
+          grid = document.createElement("div");
+          grid.className = "map-grid";
+          grid.setAttribute("role", "grid");
+          grid.setAttribute("aria-label", "Su Squares billboard");
+          grid.dataset.testid = "billboard-grid";
+          const fragment = document.createDocumentFragment();
+          for (let i = 1; i <= GRID_DIMENSION * GRID_DIMENSION; i++) {
+            const cell = document.createElement("div");
+            cell.className = "map-grid__cell";
+            cell.dataset.square = i;
+            cell.setAttribute("role", "gridcell");
+            cell.setAttribute("aria-label", `Square #${i}`);
+            cell.setAttribute("aria-selected", "false");
+            cell.tabIndex = -1;
+            fragment.appendChild(cell);
+            gridCells[i - 1] = cell;
+          }
+          if (gridCells[0]) {
+            gridCells[0].tabIndex = 0;
+            tabStopCell = gridCells[0];
+          }
+          grid.appendChild(fragment);
+          mapWrapper.appendChild(grid);
+        }
 
         // Wire up reset button
         const resetBtn = document.getElementById("map-reset-btn");
@@ -202,14 +237,35 @@ title: Billboard homepage
         const squareExtraPromise = fetch(assetPath("squareExtra.json")).then(response => response.json());
 
         const theImage = document.getElementById("theImage");
+        let imageReadyPromise = Promise.resolve();
         if (theImage) {
+          // Ensure src matches computed asset path (may already be correct; browser will reuse cache)
           theImage.src = assetPath("wholeSquare.png");
+          imageReadyPromise = new Promise((resolve) => {
+            const handleReady = () => {
+              theImage.removeEventListener("load", handleReady);
+              theImage.removeEventListener("error", handleReady);
+              resolve();
+            };
+            if (theImage.complete && theImage.naturalWidth > 1) {
+              resolve();
+            } else {
+              theImage.addEventListener("load", handleReady);
+              theImage.addEventListener("error", handleReady);
+            }
+          });
         }
 
-        Promise.all([squarePersonalizationsPromise, squareExtraPromise])
+        function markBillboardReady() {
+          // No more placeholder overlay; kept in case we want a loading state again later
+        }
+
+        Promise.all([squarePersonalizationsPromise, squareExtraPromise, imageReadyPromise])
           .then(([personalizations, extra]) => {
             squarePersonalizations = personalizations; /* [title, href] or null */
             squareExtra = extra; /* [mintedBlock, updatedBlock, mainIsPersonalized, version */
+
+            markBillboardReady();
 
             // Start fence animation
             lightUpFence(new Set([1]));
@@ -259,9 +315,8 @@ title: Billboard homepage
           })
           .catch((error) => {
             console.error("Failed to load square data", error);
+            markBillboardReady();
           });
-
-        const GRID_DIMENSION = 100;
 
         function getCellSize() {
           // Use original (pre-transform) dimensions when pan-zoom is active
@@ -270,6 +325,50 @@ title: Billboard homepage
           }
           const rect = document.getElementById("theImage").getBoundingClientRect();
           return rect.width ? rect.width / GRID_DIMENSION : 10;
+        }
+
+        function updateGridSelection(squareNumber, { focusCell = false, updateTabStop = false } = {}) {
+          if (!gridCells.length || squareNumber < 1 || squareNumber > GRID_DIMENSION * GRID_DIMENSION) {
+            return;
+          }
+          const nextCell = gridCells[squareNumber - 1];
+          if (!nextCell) return;
+          if (activeGridCell && activeGridCell !== nextCell) {
+            activeGridCell.setAttribute("aria-selected", "false");
+          }
+          activeGridCell = nextCell;
+          activeGridCell.setAttribute("aria-selected", "true");
+          if (updateTabStop && tabStopCell !== nextCell) {
+            if (tabStopCell) {
+              tabStopCell.tabIndex = -1;
+            }
+            nextCell.tabIndex = 0;
+            tabStopCell = nextCell;
+          }
+          if (focusCell) {
+            nextCell.focus();
+          }
+        }
+
+        function getSquareFromCell(element) {
+          if (!element) return null;
+          const square = Number(element.dataset.square);
+          if (Number.isNaN(square) || square < 1) {
+            return null;
+          }
+          return square;
+        }
+
+        function activateSquare(squareNumber, sourceEvent) {
+          setPosition(squareNumber);
+          if (!whereToGoAnchor) {
+            return;
+          }
+          const href = whereToGoAnchor.getAttribute("href");
+          if (!href || href === "#") {
+            return;
+          }
+          whereToGoAnchor.click();
         }
 
         function setPosition(squareNumber) {
@@ -343,6 +442,7 @@ title: Billboard homepage
           }
 
           tooltipDiv.style.display = "block";
+          updateGridSelection(squareNumber);
         }
 
         window.addEventListener("resize", () => {
@@ -352,6 +452,9 @@ title: Billboard homepage
         });
 
         function clearSelection() {
+          if (grid && grid.contains(document.activeElement)) {
+            return;
+          }
           const positionDiv = document.getElementById("position");
           const tooltipDiv = document.getElementById("tooltip");
           positionDiv.style.display = "none";
@@ -360,47 +463,119 @@ title: Billboard homepage
           if (whereToGoAnchor) {
             whereToGoAnchor.removeAttribute("href");
           }
-        }
-
-        function getSquareFromPointer(clientX, clientY) {
-          const cellSize = getCellSize();
-          let x, y;
-
-          if (panZoom && panZoom.isActive) {
-            // Convert screen coords to canvas coords
-            const coords = panZoom.screenToCanvas(clientX, clientY);
-            x = Math.min(Math.max(Math.floor(coords.x / cellSize), 0), GRID_DIMENSION - 1);
-            y = Math.min(Math.max(Math.floor(coords.y / cellSize), 0), GRID_DIMENSION - 1);
-          } else {
-            const theImage = document.getElementById("theImage");
-            const rect = theImage.getBoundingClientRect();
-            x = Math.min(Math.max(Math.floor((clientX - rect.left) / cellSize), 0), GRID_DIMENSION - 1);
-            y = Math.min(Math.max(Math.floor((clientY - rect.top) / cellSize), 0), GRID_DIMENSION - 1);
+          if (activeGridCell) {
+            activeGridCell.setAttribute("aria-selected", "false");
+            activeGridCell = null;
           }
-
-          return x + y * GRID_DIMENSION + 1;
         }
 
-        document.getElementById("theImage").addEventListener("mousemove", (e) => {
-          const squareNumber = getSquareFromPointer(e.clientX, e.clientY);
+        function handleGridPointerMove(event) {
+          if (!grid) return;
+          if (event.pointerType === "touch") {
+            return;
+          }
+          const cell = event.target.closest(".map-grid__cell");
+          const squareNumber = getSquareFromCell(cell);
+          if (!squareNumber) {
+            return;
+          }
           setPosition(squareNumber);
-        });
-        document.getElementById("theImage").addEventListener("mouseleave", clearSelection);
+        }
 
-        // Touch support for pan-zoom
-        document.getElementById("theImage").addEventListener("touchend", (e) => {
-          // Suppress selection if user was panning/zooming
+        function handleGridPointerLeave() {
+          if (grid && grid.contains(document.activeElement)) {
+            return;
+          }
+          clearSelection();
+        }
+
+        function handleGridClick(event) {
+          if (!grid) return;
           if (panZoom && panZoom.hasPanned && panZoom.hasPanned()) {
             return;
           }
-          if (e.changedTouches && e.changedTouches[0]) {
-            const touch = e.changedTouches[0];
-            const squareNumber = getSquareFromPointer(touch.clientX, touch.clientY);
-            setPosition(squareNumber);
+          const cell = event.target.closest(".map-grid__cell");
+          const squareNumber = getSquareFromCell(cell);
+          if (!squareNumber) {
+            return;
           }
-        });
+          updateGridSelection(squareNumber, { focusCell: true, updateTabStop: true });
+          activateSquare(squareNumber, event);
+        }
+
+        function handleGridFocus(event) {
+          const cell = event.target.closest(".map-grid__cell");
+          const squareNumber = getSquareFromCell(cell);
+          if (!squareNumber) {
+            return;
+          }
+          updateGridSelection(squareNumber, { updateTabStop: true });
+          setPosition(squareNumber);
+        }
+
+        function handleGridKeydown(event) {
+          const cell = event.target.closest(".map-grid__cell");
+          if (!cell) return;
+          const squareNumber = getSquareFromCell(cell);
+          if (!squareNumber) return;
+          const key = event.key.toLowerCase();
+          let nextSquare = null;
+          if (key === "w" || key === "," || key === "arrowup") {
+            if (squareNumber > GRID_DIMENSION) {
+              nextSquare = squareNumber - GRID_DIMENSION;
+            }
+          } else if (key === "a" || key === "arrowleft") {
+            if ((squareNumber - 1) % GRID_DIMENSION !== 0) {
+              nextSquare = squareNumber - 1;
+            }
+          } else if (key === "s" || key === "o" || key === "arrowdown") {
+            if (squareNumber <= GRID_DIMENSION * (GRID_DIMENSION - 1)) {
+              nextSquare = squareNumber + GRID_DIMENSION;
+            }
+          } else if (key === "d" || key === "e" || key === "arrowright") {
+            if (squareNumber % GRID_DIMENSION !== 0) {
+              nextSquare = squareNumber + 1;
+            }
+          } else if (key === "enter" || key === " " || key === "spacebar") {
+            event.preventDefault();
+            event.stopPropagation();
+            activateSquare(squareNumber, event);
+            return;
+          } else {
+            return;
+          }
+
+          if (nextSquare) {
+            event.preventDefault();
+            event.stopPropagation();
+            updateGridSelection(nextSquare, { focusCell: true, updateTabStop: true });
+            setPosition(nextSquare);
+          }
+        }
+
+        if (grid) {
+          grid.addEventListener("pointermove", handleGridPointerMove);
+          grid.addEventListener("pointerdown", handleGridPointerMove);
+          grid.addEventListener("pointerleave", handleGridPointerLeave);
+          grid.addEventListener("click", handleGridClick);
+          grid.addEventListener("focusin", handleGridFocus);
+          grid.addEventListener("keydown", handleGridKeydown);
+          grid.addEventListener("focusout", (event) => {
+            const nextFocus = event.relatedTarget;
+            if (!nextFocus || !grid.contains(nextFocus)) {
+              clearSelection();
+            }
+          });
+        }
+
+        if (mapWrapper) {
+          mapWrapper.addEventListener("pointerleave", handleGridPointerLeave);
+        }
 
         document.addEventListener("keydown", (e) => {
+          if (grid && e.target && grid.contains(e.target)) {
+            return;
+          }
           const key = e.key.toLowerCase();
           if (key === "w" || key === "," || key === "arrowup") {
             if (positionSquareNumber > GRID_DIMENSION) setPosition(positionSquareNumber - GRID_DIMENSION);
@@ -417,6 +592,7 @@ title: Billboard homepage
               whereToGoAnchor.click();
             }
           }
+          updateGridSelection(positionSquareNumber);
         });
 
         function handleWhereToGoClick(event) {
