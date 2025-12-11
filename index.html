@@ -159,7 +159,7 @@ title: Billboard homepage
     </small>
   </footer>
   <script type="module">
-    import { createPanZoom } from "{{ site.baseurl }}/assets/js/pan-zoom.js";
+    import { initHomepageBillboard } from "{{ site.baseurl }}/assets/billboard/wrappers/index-billboard.js";
 
     document.addEventListener("DOMContentLoaded", () => {
       try {
@@ -173,74 +173,39 @@ title: Billboard homepage
           assetBase = baseurl + assetBase;
         }
         const assetPath = (rel) => `${assetBase}/${String(rel).replace(/^\/+/, "")}`;
+        const normalizeHref = window.suNormalizeHref || ((href) => href);
 
-        const normalizeHref = window.suNormalizeHref || ((href) => href); // fallback if helper not loaded
-        const GRID_DIMENSION = 100;
+        // Initialize billboard
+        const billboard = initHomepageBillboard({
+          mapWrapper: document.querySelector(".map-wrapper"),
+          image: document.getElementById("theImage"),
+          positionDiv: document.getElementById("position"),
+          tooltipDiv: document.getElementById("tooltip"),
+          fenceContainer: document.getElementById("electric-fence"),
+          linkAnchor: document.getElementById("wheretogo"),
+          resetButton: document.getElementById("map-reset-btn"),
+          baseurl,
+          normalizeHref,
+        });
 
-        let positionSquareNumber = 1;
-        let hasActiveSelection = false;
-        var squarePersonalizations = [];
-        var squareExtra = [];
-
-        // Animate the electric fence
-        let fence = new Set();
-        let litUpEdge = new Set();
-        let wasEverLitUp = new Set();
-        const whereToGoAnchor = document.getElementById("wheretogo");
-        if (whereToGoAnchor) {
-          whereToGoAnchor.removeAttribute("href");
+        if (!billboard) {
+          console.error("Failed to initialize homepage billboard");
+          return;
         }
 
-        // Initialize pan-zoom on the map wrapper (mobile only)
-        const mapWrapper = document.querySelector(".map-wrapper");
-        const panZoom = mapWrapper ? createPanZoom(mapWrapper) : null;
-        let grid = null;
-        const gridCells = [];
-        let activeGridCell = null;
-        let tabStopCell = null;
-
-        if (mapWrapper) {
-          grid = document.createElement("div");
-          grid.className = "map-grid";
-          grid.setAttribute("role", "grid");
-          grid.setAttribute("aria-label", "Su Squares billboard");
-          grid.dataset.testid = "billboard-grid";
-          const fragment = document.createDocumentFragment();
-          for (let i = 1; i <= GRID_DIMENSION * GRID_DIMENSION; i++) {
-            const cell = document.createElement("div");
-            cell.className = "map-grid__cell";
-            cell.dataset.square = i;
-            cell.setAttribute("role", "gridcell");
-            cell.setAttribute("aria-label", `Square #${i}`);
-            cell.setAttribute("aria-selected", "false");
-            cell.tabIndex = -1;
-            fragment.appendChild(cell);
-            gridCells[i - 1] = cell;
-          }
-          if (gridCells[0]) {
-            gridCells[0].tabIndex = 0;
-            tabStopCell = gridCells[0];
-          }
-          grid.appendChild(fragment);
-          mapWrapper.appendChild(grid);
-        }
-
-        // Wire up reset button
-        const resetBtn = document.getElementById("map-reset-btn");
-        if (resetBtn && panZoom) {
-          resetBtn.addEventListener("click", () => {
-            panZoom.reset();
-          });
-        }
-
-        const squarePersonalizationsPromise = fetch(assetPath("squarePersonalizations.json")).then(response => response.json());
-        const squareExtraPromise = fetch(assetPath("squareExtra.json")).then(response => response.json());
-
+        // Update image src to use computed asset path
         const theImage = document.getElementById("theImage");
+        if (theImage) {
+          theImage.src = assetPath("wholeSquare.png");
+        }
+
+        // Load square data
+        const squarePersonalizationsPromise = fetch(assetPath("squarePersonalizations.json")).then(r => r.json());
+        const squareExtraPromise = fetch(assetPath("squareExtra.json")).then(r => r.json());
+
+        // Wait for image to load
         let imageReadyPromise = Promise.resolve();
         if (theImage) {
-          // Ensure src matches computed asset path (may already be correct; browser will reuse cache)
-          theImage.src = assetPath("wholeSquare.png");
           imageReadyPromise = new Promise((resolve) => {
             const handleReady = () => {
               theImage.removeEventListener("load", handleReady);
@@ -256,33 +221,24 @@ title: Billboard homepage
           });
         }
 
-        function markBillboardReady() {
-          // No more placeholder overlay; kept in case we want a loading state again later
-        }
-
         Promise.all([squarePersonalizationsPromise, squareExtraPromise, imageReadyPromise])
           .then(([personalizations, extra]) => {
-            squarePersonalizations = personalizations; /* [title, href] or null */
-            squareExtra = extra; /* [mintedBlock, updatedBlock, mainIsPersonalized, version */
+            billboard.setData(personalizations, extra);
+            billboard.startFenceAnimation();
 
-            markBillboardReady();
+            // Populate newly minted and personalized feeds
+            const newlyMintedList = document.querySelector("#newly-minted .newly-feed__items");
+            const newlyPersonalizedList = document.querySelector("#newly-personalized .newly-feed__items");
 
-            // Start fence animation
-            lightUpFence(new Set([1]));
-
-            // Show newly minted and personalized Squares
-            const newlyMintedSection = document.getElementById("newly-minted");
-            const newlyPersonalizedSection = document.getElementById("newly-personalized");
-            const newlyMintedList = newlyMintedSection.querySelector(".newly-feed__items");
-            const newlyPersonalizedList = newlyPersonalizedSection.querySelector(".newly-feed__items");
-            const mostRecentMintedSquares = squareExtra
+            const mostRecentMintedSquares = extra
               .map((extraData, index) => [index, extraData])
-              .filter(([index, extraData]) => extraData !== null)
-              .sort((a, b) => b[1][0 /* mintedBlock */] - a[1][0])
+              .filter(([, extraData]) => extraData !== null)
+              .sort((a, b) => b[1][0] - a[1][0])
               .slice(0, 5);
-            mostRecentMintedSquares.forEach(([index, extraData]) => {
-              const row = Math.floor((index) / 100);
-              const col = (index) % 100;
+
+            mostRecentMintedSquares.forEach(([index]) => {
+              const row = Math.floor(index / 100);
+              const col = index % 100;
               const squareNumber = index + 1;
               const thumbUrl = assetPath("wholeSquare.png");
               newlyMintedList.insertAdjacentHTML(
@@ -293,15 +249,17 @@ title: Billboard homepage
                 </a>`
               );
             });
-            const mostRecentPersonalizedSquares = squareExtra
+
+            const mostRecentPersonalizedSquares = extra
               .map((extraData, index) => [index, extraData])
-              .filter(([index, extraData]) => extraData !== null)
-              .filter(([index, extraData]) => extraData[1] !== extraData[0])
-              .sort((a, b) => b[1][1 /* updatedBlock */] - a[1][1])
+              .filter(([, extraData]) => extraData !== null)
+              .filter(([, extraData]) => extraData[1] !== extraData[0])
+              .sort((a, b) => b[1][1] - a[1][1])
               .slice(0, 5);
-            mostRecentPersonalizedSquares.forEach(([index, extraData]) => {
-              const row = Math.floor((index) / 100);
-              const col = (index) % 100;
+
+            mostRecentPersonalizedSquares.forEach(([index]) => {
+              const row = Math.floor(index / 100);
+              const col = index % 100;
               const squareNumber = index + 1;
               const thumbUrl = assetPath("wholeSquare.png");
               newlyPersonalizedList.insertAdjacentHTML(
@@ -315,372 +273,7 @@ title: Billboard homepage
           })
           .catch((error) => {
             console.error("Failed to load square data", error);
-            markBillboardReady();
           });
-
-        function getCellSize() {
-          // Use original (pre-transform) dimensions when pan-zoom is active
-          if (mapWrapper && panZoom && panZoom.isActive) {
-            return mapWrapper.offsetWidth / GRID_DIMENSION;
-          }
-          const rect = document.getElementById("theImage").getBoundingClientRect();
-          return rect.width ? rect.width / GRID_DIMENSION : 10;
-        }
-
-        function updateGridSelection(squareNumber, { focusCell = false, updateTabStop = false } = {}) {
-          if (!gridCells.length || squareNumber < 1 || squareNumber > GRID_DIMENSION * GRID_DIMENSION) {
-            return;
-          }
-          const nextCell = gridCells[squareNumber - 1];
-          if (!nextCell) return;
-          if (activeGridCell && activeGridCell !== nextCell) {
-            activeGridCell.setAttribute("aria-selected", "false");
-          }
-          activeGridCell = nextCell;
-          activeGridCell.setAttribute("aria-selected", "true");
-          if (updateTabStop && tabStopCell !== nextCell) {
-            if (tabStopCell) {
-              tabStopCell.tabIndex = -1;
-            }
-            nextCell.tabIndex = 0;
-            tabStopCell = nextCell;
-          }
-          if (focusCell) {
-            nextCell.focus();
-          }
-        }
-
-        function getSquareFromCell(element) {
-          if (!element) return null;
-          const square = Number(element.dataset.square);
-          if (Number.isNaN(square) || square < 1) {
-            return null;
-          }
-          return square;
-        }
-
-        function activateSquare(squareNumber, sourceEvent) {
-          setPosition(squareNumber);
-          if (!whereToGoAnchor) {
-            return;
-          }
-          const href = whereToGoAnchor.getAttribute("href");
-          if (!href || href === "#") {
-            return;
-          }
-          whereToGoAnchor.click();
-        }
-
-        function setPosition(squareNumber) {
-          positionSquareNumber = squareNumber;
-          const positionDiv = document.getElementById("position");
-          const tooltipDiv = document.getElementById("tooltip");
-          hasActiveSelection = true;
-          if (!whereToGoAnchor) {
-            return;
-          }
-          const cellSize = getCellSize();
-          const col = (squareNumber - 1) % GRID_DIMENSION;
-          const row = Math.floor((squareNumber - 1) / GRID_DIMENSION);
-
-          const normalizedHref = normalizeHref(squarePersonalizations[squareNumber - 1]?.[1]);
-
-          if (!squarePersonalizations[squareNumber - 1]) {
-            document.getElementById("theImage").style.cursor = "pointer";
-            tooltipDiv.textContent = "Square #" + squareNumber + " is available for sale, click to buy.";
-            whereToGoAnchor.href = baseurl + "/buy?square=" + squareNumber;
-          } else if (!squarePersonalizations[squareNumber - 1][0] && !squarePersonalizations[squareNumber - 1][1]) {
-            document.getElementById("theImage").style.cursor = "not-allowed";
-            tooltipDiv.textContent = "Square #" + squareNumber + " WAS PURCHASED BUT NOT YET PERSONALIZED";
-            whereToGoAnchor.removeAttribute("href");
-          } else {
-            document.getElementById("theImage").style.cursor = "pointer";
-            tooltipDiv.textContent = "Square #" + squareNumber + " " + squarePersonalizations[squareNumber - 1][0];
-            if (normalizedHref) {
-              whereToGoAnchor.href = normalizedHref;
-            } else {
-              whereToGoAnchor.removeAttribute("href");
-            }
-          }
-
-          positionDiv.style.width = cellSize + "px";
-          positionDiv.style.height = cellSize + "px";
-          positionDiv.style.left = (col * cellSize) + "px";
-          positionDiv.style.top = (row * cellSize) + "px";
-          positionDiv.style.display = "block";
-
-          // Position tooltip based on which half of the grid the square is in
-          // Left half (columns 0-49): tooltip appears to the right
-          // Right half (columns 50-99): tooltip appears to the left
-          const isLeftHalf = col < GRID_DIMENSION / 2;
-          if (isLeftHalf) {
-            tooltipDiv.style.left = (col * cellSize + cellSize * 1.5) + "px";
-            tooltipDiv.style.right = "auto";
-          } else {
-            tooltipDiv.style.left = "auto";
-            tooltipDiv.style.right = ((GRID_DIMENSION - col - 1) * cellSize + cellSize * 1.5) + "px";
-          }
-
-          // Vertical positioning based on row to prevent edge overflow
-          // Top 5000 squares (rows 0-49): tooltip appears below the square
-          // Bottom 5000 squares (rows 50-99): tooltip appears above the square
-          const isTopHalf = row < GRID_DIMENSION / 2;
-          if (isTopHalf) {
-            tooltipDiv.style.top = ((row + 1) * cellSize) + "px";
-            tooltipDiv.style.transformOrigin = `${isLeftHalf ? "left" : "right"} top`;
-          } else {
-            tooltipDiv.style.top = (row * cellSize) + "px";
-            tooltipDiv.style.transformOrigin = `${isLeftHalf ? "left" : "right"} bottom`;
-          }
-
-          // Scale tooltip with pan-zoom (mobile only)
-          const yTransform = isTopHalf ? "" : "translateY(-100%)";
-          if (panZoom && panZoom.isActive && panZoom.scale) {
-            tooltipDiv.style.transform = `${yTransform} scale(${1 / panZoom.scale})`;
-          } else {
-            tooltipDiv.style.transform = yTransform;
-          }
-
-          tooltipDiv.style.display = "block";
-          updateGridSelection(squareNumber);
-        }
-
-        window.addEventListener("resize", () => {
-          if (document.getElementById("tooltip").style.display === "block") {
-            setPosition(positionSquareNumber);
-          }
-        });
-
-        function clearSelection() {
-          if (grid && grid.contains(document.activeElement)) {
-            return;
-          }
-          const positionDiv = document.getElementById("position");
-          const tooltipDiv = document.getElementById("tooltip");
-          positionDiv.style.display = "none";
-          tooltipDiv.style.display = "none";
-          hasActiveSelection = false;
-          if (whereToGoAnchor) {
-            whereToGoAnchor.removeAttribute("href");
-          }
-          if (activeGridCell) {
-            activeGridCell.setAttribute("aria-selected", "false");
-            activeGridCell = null;
-          }
-        }
-
-        function handleGridPointerMove(event) {
-          if (!grid) return;
-          if (event.pointerType === "touch") {
-            return;
-          }
-          const cell = event.target.closest(".map-grid__cell");
-          const squareNumber = getSquareFromCell(cell);
-          if (!squareNumber) {
-            return;
-          }
-          setPosition(squareNumber);
-        }
-
-        function handleGridPointerLeave() {
-          if (grid && grid.contains(document.activeElement)) {
-            return;
-          }
-          clearSelection();
-        }
-
-        function handleGridClick(event) {
-          if (!grid) return;
-          if (panZoom && panZoom.hasPanned && panZoom.hasPanned()) {
-            return;
-          }
-          const cell = event.target.closest(".map-grid__cell");
-          const squareNumber = getSquareFromCell(cell);
-          if (!squareNumber) {
-            return;
-          }
-          updateGridSelection(squareNumber, { focusCell: true, updateTabStop: true });
-          activateSquare(squareNumber, event);
-        }
-
-        function handleGridFocus(event) {
-          const cell = event.target.closest(".map-grid__cell");
-          const squareNumber = getSquareFromCell(cell);
-          if (!squareNumber) {
-            return;
-          }
-          updateGridSelection(squareNumber, { updateTabStop: true });
-          setPosition(squareNumber);
-        }
-
-        function handleGridKeydown(event) {
-          const cell = event.target.closest(".map-grid__cell");
-          if (!cell) return;
-          const squareNumber = getSquareFromCell(cell);
-          if (!squareNumber) return;
-          const key = event.key.toLowerCase();
-          let nextSquare = null;
-          if (key === "w" || key === "," || key === "arrowup") {
-            if (squareNumber > GRID_DIMENSION) {
-              nextSquare = squareNumber - GRID_DIMENSION;
-            }
-          } else if (key === "a" || key === "arrowleft") {
-            if ((squareNumber - 1) % GRID_DIMENSION !== 0) {
-              nextSquare = squareNumber - 1;
-            }
-          } else if (key === "s" || key === "o" || key === "arrowdown") {
-            if (squareNumber <= GRID_DIMENSION * (GRID_DIMENSION - 1)) {
-              nextSquare = squareNumber + GRID_DIMENSION;
-            }
-          } else if (key === "d" || key === "e" || key === "arrowright") {
-            if (squareNumber % GRID_DIMENSION !== 0) {
-              nextSquare = squareNumber + 1;
-            }
-          } else if (key === "enter" || key === " " || key === "spacebar") {
-            event.preventDefault();
-            event.stopPropagation();
-            activateSquare(squareNumber, event);
-            return;
-          } else {
-            return;
-          }
-
-          if (nextSquare) {
-            event.preventDefault();
-            event.stopPropagation();
-            updateGridSelection(nextSquare, { focusCell: true, updateTabStop: true });
-            setPosition(nextSquare);
-          }
-        }
-
-        if (grid) {
-          grid.addEventListener("pointermove", handleGridPointerMove);
-          grid.addEventListener("pointerdown", handleGridPointerMove);
-          grid.addEventListener("pointerleave", handleGridPointerLeave);
-          grid.addEventListener("click", handleGridClick);
-          grid.addEventListener("focusin", handleGridFocus);
-          grid.addEventListener("keydown", handleGridKeydown);
-          grid.addEventListener("focusout", (event) => {
-            const nextFocus = event.relatedTarget;
-            if (!nextFocus || !grid.contains(nextFocus)) {
-              clearSelection();
-            }
-          });
-        }
-
-        if (mapWrapper) {
-          mapWrapper.addEventListener("pointerleave", handleGridPointerLeave);
-        }
-
-        document.addEventListener("keydown", (e) => {
-          if (grid && e.target && grid.contains(e.target)) {
-            return;
-          }
-          const key = e.key.toLowerCase();
-          if (key === "w" || key === "," || key === "arrowup") {
-            if (positionSquareNumber > GRID_DIMENSION) setPosition(positionSquareNumber - GRID_DIMENSION);
-            e.preventDefault();
-          } else if (key === "a" || key === "arrowleft") {
-            if (positionSquareNumber % GRID_DIMENSION !== 1) setPosition(positionSquareNumber - 1);
-          } else if (key === "s" || key === "o" || key === "arrowdown") {
-            if (positionSquareNumber <= GRID_DIMENSION * (GRID_DIMENSION - 1)) setPosition(positionSquareNumber + GRID_DIMENSION);
-            e.preventDefault();
-          } else if (key === "d" || key === "e" || key === "arrowright") {
-            if (positionSquareNumber % GRID_DIMENSION !== 0) setPosition(positionSquareNumber + 1);
-          } else if (key === "enter") {
-            if (hasActiveSelection && whereToGoAnchor && whereToGoAnchor.hasAttribute("href")) {
-              whereToGoAnchor.click();
-            }
-          }
-          updateGridSelection(positionSquareNumber);
-        });
-
-        function handleWhereToGoClick(event) {
-          // Suppress click if user was panning/zooming
-          if (panZoom && panZoom.hasPanned && panZoom.hasPanned()) {
-            event.preventDefault();
-            return;
-          }
-
-          if (!whereToGoAnchor) {
-            return;
-          }
-
-          const href = whereToGoAnchor.getAttribute("href");
-          if (!href || href === "#") {
-            return;
-          }
-
-          const modal = window.SuLeavingModal;
-          if (!modal || typeof modal.shouldWarnForUrl !== "function" || typeof modal.show !== "function") {
-            return;
-          }
-
-          let destination;
-          try {
-            destination = new URL(href, window.location.href);
-          } catch (error) {
-            return;
-          }
-
-          if (!modal.shouldWarnForUrl(destination)) {
-            return;
-          }
-
-          event.preventDefault();
-          modal.show(destination, whereToGoAnchor.getAttribute("target") || "_self");
-        }
-
-        if (whereToGoAnchor) {
-          whereToGoAnchor.addEventListener("click", handleWhereToGoClick);
-        }
-
-        function lightUpFence(edge) {
-          litUpEdge.forEach(s => {
-            const element = document.getElementById("electric-fence-" + s);
-            if (element && element.parentNode) {
-              element.parentNode.removeChild(element);
-            }
-          });
-          litUpEdge.clear();
-          let nextEdge = new Set();
-          edge.forEach((square) => {
-            wasEverLitUp.add(square);
-            const element = document.createElement("div");
-            element.id = "electric-fence-" + square;
-            element.style.pointerEvents = "none";
-            element.style.position = "absolute";
-            element.style.left = ((square - 1) % GRID_DIMENSION) + "%";
-            element.style.top = Math.floor((square - 1) / GRID_DIMENSION) + "%";
-            element.style.width = "1%";
-            element.style.height = "1%";
-            element.style.background = "#ffd700";
-            element.style.opacity = "0.25";
-            document.getElementById("electric-fence").appendChild(element);
-            if (squarePersonalizations[square - 1] !== null) {
-              litUpEdge.add(square);
-              if (square > GRID_DIMENSION && !wasEverLitUp.has(square - GRID_DIMENSION)) {
-                nextEdge.add(square - GRID_DIMENSION);
-              }
-              if (square <= GRID_DIMENSION * (GRID_DIMENSION - 1) && !wasEverLitUp.has(square + GRID_DIMENSION)) {
-                nextEdge.add(square + GRID_DIMENSION);
-              }
-              if (square % GRID_DIMENSION != 1 && !wasEverLitUp.has(square - 1)) {
-                nextEdge.add(square - 1);
-              }
-              if (square % GRID_DIMENSION != 0 && !wasEverLitUp.has(square + 1)) {
-                nextEdge.add(square + 1);
-              }
-            } else {
-              fence.add(square);
-            }
-          });
-          if (nextEdge.size > 0) {
-            setTimeout(() => {
-              lightUpFence(nextEdge);
-            }, 25);
-          }
-        }
       } catch (error) {
         console.error("Homepage init failed", error);
       }
