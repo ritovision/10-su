@@ -27,57 +27,59 @@ image: "{{ site.baseurl }}/assets/images/su-OG.png"
   {% include jsonld/pages/square.html %}
 </head>
 
-<body>
+<body class="square-body">
   {% include nav-header.html %}
 
-  <section class="square-default-state" id="square-default-state">
-    <h1>Look up <span style="white-space: nowrap;">Su Squares</span></h1>
-    <p class="square-default-state__description">
-      Enter a minted square number to review its appearance and history.
-    </p>
-  </section>
+  <main id="main-content" class="fade-target square-main">
+    <section class="square-default-state" id="square-default-state">
+      <h1>Look up <span style="white-space: nowrap;">Su Squares</span></h1>
+      <p class="square-default-state__description">
+        Enter a minted square number to review its appearance and history.
+      </p>
+    </section>
 
-  <article class="square-page square-page--hidden" id="square-details" aria-hidden="true">
-    <h1>Square #<span id="square-number">...</span></h1>
-    <div id="image"></div>
+    <article class="square-page square-page--hidden" id="square-details" aria-hidden="true">
+      <h1>Square #<span id="square-number">...</span></h1>
+      <div id="image"></div>
 
-    <div class="dl-wrapper">
-      <dl class="dl-styled" data-testid="square-nft-table">
-        <dt>Minted</dt>
-        <dd id="minted"></dd>
-        <dt>Personalized</dt>
-        <dd id="personalized"></dd> <!-- also show #X most recent -->
-        <dt>Title</dt>
-        <dd id="title"></dd>
-        <dt>Link</dt>
-        <dd id="link"></dd>
-      </dl>
-    </div>
-
-    <div id="etherscan-button-wrapper" style="text-align:center; margin: 1.5rem 0;">
-      <a id="view-etherscan" class="btn btn-lg square-lookup__submit" href="#" target="_blank" rel="noopener"
-        style="display:none;">View NFT on Etherscan</a>
-    </div>
-
-    <h2>Location</h2>
-    <div class="square-location-wrapper">
-      <div class="square-location">
-        <div class="square-location__canvas">
-          <img id="theImage" class="square-location__image"
-            src="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" alt="All Su Squares">
-          <img id="arrow" class="square-location__arrow" src="{{ site.baseurl }}/assets/images/dr.png" alt="Location">
-        </div>
+      <div class="dl-wrapper">
+        <dl class="dl-styled" data-testid="square-nft-table">
+          <dt>Minted</dt>
+          <dd id="minted"></dd>
+          <dt>Personalized</dt>
+          <dd id="personalized"></dd> <!-- also show #X most recent -->
+          <dt>Title</dt>
+          <dd id="title"></dd>
+          <dt>Link</dt>
+          <dd id="link"></dd>
+        </dl>
       </div>
-      <p class="square-location__mobile-hint">Pinch to zoom, drag to pan.</p>
-      <button type="button" class="square-location__reset-btn" id="location-reset-btn" style="display:none;">Reset zoom</button>
-    </div>
 
-    <h2>Emojified</h2>
-    <pre id="emojified" data-testid="square-emojified"></pre>
-    <button class="btn" id="copy-emojified">Copy</button>
-  </article>
+      <div id="etherscan-button-wrapper" style="text-align:center; margin: 1.5rem 0;">
+        <a id="view-etherscan" class="btn btn-lg square-lookup__submit" href="#" target="_blank" rel="noopener"
+          style="display:none;">View NFT on Etherscan</a>
+      </div>
 
-  {% include square-lookup.html variant="narrow" %}
+      <h2>Location</h2>
+      <div class="square-location-wrapper">
+        <div class="square-location">
+          <div class="square-location__canvas">
+            <img id="theImage" class="square-location__image"
+              src="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" alt="All Su Squares">
+            <img id="arrow" class="square-location__arrow" src="{{ site.baseurl }}/assets/images/dr.png" alt="Location">
+          </div>
+        </div>
+        <p class="square-location__mobile-hint">Pinch to zoom, drag to pan.</p>
+        <button type="button" class="square-location__reset-btn" id="location-reset-btn" style="display:none;">Reset zoom</button>
+      </div>
+
+      <h2>Emojified</h2>
+      <pre id="emojified" data-testid="square-emojified"></pre>
+      <button class="btn" id="copy-emojified">Copy</button>
+    </article>
+
+    {% include square-lookup.html variant="narrow" %}
+  </main>
 
   <footer>
     <small>
@@ -96,6 +98,15 @@ image: "{{ site.baseurl }}/assets/images/su-OG.png"
 
     document.addEventListener("DOMContentLoaded", () => {
       const baseurl = window.SITE_BASEURL || '';
+
+      // Fade-in animation trigger for main content only
+      const mainContent = document.getElementById('main-content');
+      if (mainContent) {
+        setTimeout(() => {
+          mainContent.classList.add('fade-visible');
+        }, 500); // 0.5s delay before fade-in
+      }
+
       const runtimeCfg = window.suWeb3 || window.SU_WEB3 || {};
       const runtimeChain =
         (runtimeCfg.chain || runtimeCfg.CHAIN || runtimeCfg.network || runtimeCfg.NETWORK || "mainnet").toString().toLowerCase();
