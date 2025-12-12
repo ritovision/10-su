@@ -14,6 +14,7 @@ image: "{{ site.baseurl }}/assets/images/su-OG.png"
   <title>Buy a Square and claim a spot on the homepage</title>
   <link rel="canonical" href="https://tenthousandsu.com/buy" />
   <link rel="stylesheet" href="{{ site.baseurl }}/assets/css/main.css">
+  <link rel="stylesheet" href="{{ site.baseurl }}/assets/billboard/billboard.css">
   <link rel="stylesheet" href="{{ site.baseurl }}/assets/css/buy.css">
   <link rel="stylesheet" href="{{ site.baseurl }}/assets/square-lookup/styles.css">
   <link rel="stylesheet" href="{{ site.baseurl }}/assets/web3/tx/styles.css">
@@ -185,6 +186,7 @@ image: "{{ site.baseurl }}/assets/images/su-OG.png"
           trigger: chooseBillboardButton,
           filter: (_id, ctx) => !ctx.extra, // only unminted
           title: "Choose square from billboard",
+          tooltipMode: "buy",
         });
         return billboardChooserHandle;
       };
