@@ -79,6 +79,29 @@ title: Billboard homepage
     </section>
   </article>
 
+  <article class="billboard-embed" id="billboard-embed">
+    <h2>Billboard embed</h2>
+    <p>You can display the fully functional billboard on your site or app with our embed feature. Copy the iframe or URL to use it; or if you want to customize it (the background, text, colors), visit the embed builder page.</p>
+    <div class="billboard-embed__actions">
+      <div class="billboard-embed__dropdown" id="embed-copy-dropdown">
+        <button type="button" class="billboard-embed__trigger" id="embed-copy-trigger">
+          Copy embed ▾
+        </button>
+        <div class="billboard-embed__menu" id="embed-copy-menu">
+          <button type="button" class="billboard-embed__option" data-copy="url" id="embed-copy-url">
+            Copy URL
+          </button>
+          <button type="button" class="billboard-embed__option" data-copy="iframe" id="embed-copy-iframe">
+            Copy iframe
+          </button>
+        </div>
+      </div>
+      <a href="{{ site.baseurl }}/embed-builder.html" class="billboard-embed__link">
+        Embed builder
+      </a>
+    </div>
+  </article>
+
   {% include square-lookup.html %}
 
   <section class="developer-learning" aria-labelledby="developer-learning-title">
@@ -285,6 +308,82 @@ title: Billboard homepage
   </script>
   <script type="module" src="{{ site.baseurl }}/assets/square-lookup/index.js"></script>
   <script src="{{ site.baseurl }}/assets/js/pwa-init.js"></script>
+  <script>
+  (function() {
+    var baseurl = window.SITE_BASEURL || '';
+    var embedUrl = window.location.origin + baseurl + '/embed.html';
+    var embedIframe = '<iframe width="600" height="600" frameborder="0" title="Su Squares Billboard" src="' + embedUrl + '"></iframe>';
+
+    var dropdown = document.getElementById('embed-copy-dropdown');
+    var trigger = document.getElementById('embed-copy-trigger');
+    var copyUrlBtn = document.getElementById('embed-copy-url');
+    var copyIframeBtn = document.getElementById('embed-copy-iframe');
+
+    if (!dropdown || !trigger) return;
+
+    // Toggle dropdown
+    trigger.addEventListener('click', function(e) {
+      e.stopPropagation();
+      dropdown.classList.toggle('is-open');
+    });
+
+    // Close on outside click
+    document.addEventListener('click', function(e) {
+      if (!dropdown.contains(e.target)) {
+        dropdown.classList.remove('is-open');
+      }
+    });
+
+    // Copy URL
+    if (copyUrlBtn) {
+      copyUrlBtn.addEventListener('click', function() {
+        copyToClipboard(embedUrl, this);
+      });
+    }
+
+    // Copy iframe
+    if (copyIframeBtn) {
+      copyIframeBtn.addEventListener('click', function() {
+        copyToClipboard(embedIframe, this);
+      });
+    }
+
+    function copyToClipboard(text, button) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function() {
+          showCopied(button);
+        }).catch(function() {
+          fallbackCopy(text, button);
+        });
+      } else {
+        fallbackCopy(text, button);
+      }
+    }
+
+    function fallbackCopy(text, button) {
+      var textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+      showCopied(button);
+    }
+
+    function showCopied(button) {
+      var original = button.textContent;
+      button.textContent = 'Copied!';
+      button.dataset.copied = 'true';
+      setTimeout(function() {
+        button.textContent = original;
+        button.dataset.copied = 'false';
+        dropdown.classList.remove('is-open');
+      }, 1000);
+    }
+  })();
+  </script>
 </body>
 
 </html>
