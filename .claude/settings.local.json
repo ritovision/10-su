@@ -16,7 +16,11 @@
       "Bash(magick:*)",
       "Bash(convert:*)",
       "Bash(python:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(npx hardhat test:*)",
+      "Bash(node -e:*)",
+      "Bash(git -C \"/c/Users/Mattj/techstuff/tenthousandsu.com\" log --oneline -20)",
+      "Bash(git -C /c/Users/Mattj/techstuff/tenthousandsu.com show --name-status HEAD:_includes/square-lookup.html)"
     ],
     "deny": [],
     "ask": []
