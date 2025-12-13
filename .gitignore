@@ -38,6 +38,12 @@ erc721-sepolia/
 /nodejs/smart-contract/personalizing/metadata/personalizations.csv
 
 
+### Playwright ###
+nodejs/playwright/wallet/injected-provider.js
+nodejs/playwright/wallet/injected-provider.js.map
+nodejs/playwright/playwright-report
+nodejs/playwright/test-results
+
 # Windows reserved device names
 nul
 NUL
