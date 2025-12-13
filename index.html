@@ -15,6 +15,7 @@ title: Billboard homepage
   <meta name="description" content="The first ERC-721 NFT. Cute squares you own and personalize for the homepage.">
   <link rel="canonical" href="https://tenthousandsu.com" />
   <link rel="stylesheet" href="{{ site.baseurl }}/assets/css/main.css">
+  <link rel="stylesheet" href="{{ site.baseurl }}/assets/billboard/billboard.css">
   <link rel="stylesheet" href="{{ site.baseurl }}/assets/css/index.css">
   <link rel="stylesheet" href="{{ site.baseurl }}/assets/square-lookup/styles.css">
   {% include nav-menu-head.html %}
@@ -23,6 +24,8 @@ title: Billboard homepage
   {% include jsonld-nav.html %}
   {% include jsonld/billboard.html %}
   <link rel="stylesheet" href="{{ site.baseurl }}/assets/modals/leaving-modal/modal.css">
+  <link rel="stylesheet" href="{{ site.baseurl }}/assets/modals/blocked-modal/blocked-modal.css">
+  <script src="{{ site.baseurl }}/assets/modals/blocked-modal/blocked-modal.js"></script>
   <script src="{{ site.baseurl }}/assets/modals/leaving-modal/modal-core.js"></script>
   <script src="{{ site.baseurl }}/assets/modals/leaving-modal/link-guard.js"></script>
 </head>
@@ -32,9 +35,10 @@ title: Billboard homepage
 
   <article>
     <h1 class="home-title">The first <span class="no-break">ERC-721</span> NFT</h1>
-    <p>Click an empty square below to mint an available Su Square (<span id="mint-price-display">0.5 ETH</span>).
+    <p>Click an empty white square below to mint an available Su Square (<span id="mint-price-display">0.5 ETH</span>).
       Clicking an already minted and personalized
       one will activate its hyperlink.</p>
+      <h2 class="billboard-heading">Su Squares Billboard</h2>
     <p class="mobile-hint">Pinch to zoom, drag to pan</p>
     <script>
       // Only update if there's a pricing override to avoid performance tax
@@ -73,6 +77,29 @@ title: Billboard homepage
       <strong class="newly-feed__heading">Latest personalized</strong>
       <div class="newly-feed__items"></div>
     </section>
+  </article>
+
+  <article class="billboard-embed" id="billboard-embed">
+    <h2>Billboard embed</h2>
+    <p>You can display the fully functional billboard on your site or app with our embed feature. Copy the iframe or URL to use it; or if you want to customize it (the background, text, colors), visit the embed builder page.</p>
+    <div class="billboard-embed__actions">
+      <div class="billboard-embed__dropdown" id="embed-copy-dropdown">
+        <button type="button" class="billboard-embed__trigger" id="embed-copy-trigger">
+          Copy embed ▾
+        </button>
+        <div class="billboard-embed__menu" id="embed-copy-menu">
+          <button type="button" class="billboard-embed__option" data-copy="url" id="embed-copy-url">
+            Copy URL
+          </button>
+          <button type="button" class="billboard-embed__option" data-copy="iframe" id="embed-copy-iframe">
+            Copy iframe
+          </button>
+        </div>
+      </div>
+      <a href="{{ site.baseurl }}/embed-builder.html" class="billboard-embed__link">
+        Embed builder
+      </a>
+    </div>
   </article>
 
   {% include square-lookup.html %}
@@ -281,6 +308,82 @@ title: Billboard homepage
   </script>
   <script type="module" src="{{ site.baseurl }}/assets/square-lookup/index.js"></script>
   <script src="{{ site.baseurl }}/assets/js/pwa-init.js"></script>
+  <script>
+  (function() {
+    var baseurl = window.SITE_BASEURL || '';
+    var embedUrl = window.location.origin + baseurl + '/embed.html';
+    var embedIframe = '<iframe width="600" height="600" frameborder="0" title="Su Squares Billboard" src="' + embedUrl + '"></iframe>';
+
+    var dropdown = document.getElementById('embed-copy-dropdown');
+    var trigger = document.getElementById('embed-copy-trigger');
+    var copyUrlBtn = document.getElementById('embed-copy-url');
+    var copyIframeBtn = document.getElementById('embed-copy-iframe');
+
+    if (!dropdown || !trigger) return;
+
+    // Toggle dropdown
+    trigger.addEventListener('click', function(e) {
+      e.stopPropagation();
+      dropdown.classList.toggle('is-open');
+    });
+
+    // Close on outside click
+    document.addEventListener('click', function(e) {
+      if (!dropdown.contains(e.target)) {
+        dropdown.classList.remove('is-open');
+      }
+    });
+
+    // Copy URL
+    if (copyUrlBtn) {
+      copyUrlBtn.addEventListener('click', function() {
+        copyToClipboard(embedUrl, this);
+      });
+    }
+
+    // Copy iframe
+    if (copyIframeBtn) {
+      copyIframeBtn.addEventListener('click', function() {
+        copyToClipboard(embedIframe, this);
+      });
+    }
+
+    function copyToClipboard(text, button) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function() {
+          showCopied(button);
+        }).catch(function() {
+          fallbackCopy(text, button);
+        });
+      } else {
+        fallbackCopy(text, button);
+      }
+    }
+
+    function fallbackCopy(text, button) {
+      var textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+      showCopied(button);
+    }
+
+    function showCopied(button) {
+      var original = button.textContent;
+      button.textContent = 'Copied!';
+      button.dataset.copied = 'true';
+      setTimeout(function() {
+        button.textContent = original;
+        button.dataset.copied = 'false';
+        dropdown.classList.remove('is-open');
+      }, 1000);
+    }
+  })();
+  </script>
 </body>
 
 </html>
