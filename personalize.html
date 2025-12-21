@@ -36,7 +36,8 @@ image: "{{ site.baseurl }}/assets/images/su-OG.png"
     </p>
     <p>
       Use this page to personalize a Su Square you own on TenThousandSu.com. To personalize many squares, try the <a
-        href="{{ site.baseurl }}/personalize-batch">batch tool</a>. If your Square was previously personalized using the old, more
+        href="{{ site.baseurl }}/personalize-batch">batch tool</a>. If your Square was previously personalized using the
+      old, more
       expensive method you will need to <a href="#" id="open-unpersonalize-modal">unpersonalize</a>
       it first.
     </p>
@@ -119,8 +120,8 @@ image: "{{ site.baseurl }}/assets/images/su-OG.png"
     import {
       ensureConnected,
       ensureCorrectNetwork,
-      openWalletFromStore,
-      hasWalletConnectSession,
+      isMobileDevice,
+      openWalletChooser,
     } from "{{ site.baseurl }}/assets/web3/foundation.js";
     import { createTxFixture } from "{{ site.baseurl }}/assets/web3/tx/index.js";
     import { getWeb3Config } from "{{ site.baseurl }}/assets/web3/config.js";
@@ -150,6 +151,7 @@ image: "{{ site.baseurl }}/assets/images/su-OG.png"
     let title;
     let url;
     let imagePixelsHex; // 0xRRGGBB.. of top-left pixel, pixel to its right, ...
+    let currentWagmi = null; // Track current wagmi client for button visibility
 
     // Validate changes to #square-number //////////////////////////////////////////////////////////////////////////////
     // todo: look up and show warnings if Square is personalized on main contract (which occludes)
@@ -248,28 +250,19 @@ image: "{{ site.baseurl }}/assets/images/su-OG.png"
       squareNumberInput.dispatchEvent(new Event("input"));
     }
 
+    // Open wallet button - shows on mobile when connected via WalletConnect
     const updateOpenWalletButton = () => {
       if (!openWalletButton) return;
-      const hasSession = hasWalletConnectSession();
-      openWalletButton.style.display = hasSession ? "inline-block" : "none";
-    };
-
-    const triggerWalletDeepLink = () => {
-      if (hasWalletConnectSession()) {
-        openWalletFromStore();
-      }
+      const isWalletConnect = currentWagmi?.getAccount?.()?.connector?.id === "walletConnect";
+      const showButton = isMobileDevice() && isWalletConnect;
+      openWalletButton.style.display = showButton ? "inline-block" : "none";
     };
 
     if (openWalletButton) {
       updateOpenWalletButton();
-      window.addEventListener("su-wc-session-change", (event) => {
-        const hasSession = Boolean(event?.detail?.hasSession);
-        openWalletButton.style.display = hasSession ? "inline-block" : "none";
-      });
       openWalletButton.addEventListener("click", () => {
-        if (!openWalletFromStore()) {
-          alert("No WalletConnect session found yet. Tap Connect Wallet first.");
-        }
+        // Opens OS app chooser with placeholder URI (no real session data exposed)
+        openWalletChooser();
       });
     }
 
@@ -287,13 +280,16 @@ image: "{{ site.baseurl }}/assets/images/su-OG.png"
       if (!imagePixelsHex) {
         return alert("Please select an image.");
       }
-      triggerWalletDeepLink();
       txUi.startProcessing(`Personalizing Square #${squareNumber}. Confirm in your wallet to continue.`);
       const doSendTransaction = async (wagmi) => {
+        const isWalletConnect = wagmi?.getAccount?.()?.connector?.id === "walletConnect";
         txUi.setWalletContext({
-          hasSession: hasWalletConnectSession(),
-          isWalletConnect: wagmi?.getAccount?.()?.connector?.id === "walletConnect",
+          isWalletConnect,
         });
+        // Trigger wallet app open on mobile for WalletConnect
+        if (isMobileDevice() && isWalletConnect) {
+          openWalletChooser();
+        }
         let result;
         try {
           result = await personalizeUnderlay({ squareId: squareNumber, imagePixelsHex, title, url }, wagmi);
@@ -313,6 +309,8 @@ image: "{{ site.baseurl }}/assets/images/su-OG.png"
         }
       };
       await ensureConnected(async (clients) => {
+        currentWagmi = clients;
+        updateOpenWalletButton();
         await ensureCorrectNetwork(clients);
         const { activeNetwork } = getWeb3Config();
         const account = clients.getAccount?.();
@@ -406,15 +404,15 @@ image: "{{ site.baseurl }}/assets/images/su-OG.png"
           if (unpersonalizeStatus) {
             if (status.message) {
               unpersonalizeStatus.textContent = status.message;
-            if (status.isOnMain && status.hasPersonalization) {
-              unpersonalizeStatus.className = "su-modal__status su-modal__status--success";
+              if (status.isOnMain && status.hasPersonalization) {
+                unpersonalizeStatus.className = "su-modal__status su-modal__status--success";
+              } else {
+                unpersonalizeStatus.className = "su-modal__status su-modal__status--warning";
+              }
             } else {
-              unpersonalizeStatus.className = "su-modal__status su-modal__status--warning";
+              unpersonalizeStatus.textContent = "";
+              unpersonalizeStatus.className = "su-modal__status";
             }
-          } else {
-            unpersonalizeStatus.textContent = "";
-            unpersonalizeStatus.className = "su-modal__status";
-          }
           }
         } catch (error) {
           console.warn("Could not check personalization status:", error);
@@ -465,10 +463,14 @@ image: "{{ site.baseurl }}/assets/images/su-OG.png"
         await ensureConnected(async (clients) => {
           await ensureCorrectNetwork(clients);
 
+          const isWalletConnect = clients?.getAccount?.()?.connector?.id === "walletConnect";
           unpersonalizeTxUi.setWalletContext({
-            hasSession: hasWalletConnectSession(),
-            isWalletConnect: clients?.getAccount?.()?.connector?.id === "walletConnect",
+            isWalletConnect,
           });
+          // Trigger wallet app open on mobile for WalletConnect
+          if (isMobileDevice() && isWalletConnect) {
+            openWalletChooser();
+          }
 
           // Set balance context
           const { activeNetwork } = getWeb3Config();
