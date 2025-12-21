@@ -79,8 +79,8 @@ image: "{{ site.baseurl }}/assets/images/su-OG.png"
     import {
       ensureConnected,
       ensureCorrectNetwork,
-      openWalletFromStore,
-      hasWalletConnectSession,
+      isMobileDevice,
+      openWalletChooser,
     } from "{{ site.baseurl }}/assets/web3/foundation.js";
     import { createTxFixture } from "{{ site.baseurl }}/assets/web3/tx/index.js";
     import { getWeb3Config } from "{{ site.baseurl }}/assets/web3/config.js";
@@ -112,6 +112,7 @@ image: "{{ site.baseurl }}/assets/images/su-OG.png"
     let squarePersonalizations;
     let squareExtra;
     let lastMintedSquare = null;
+    let currentWagmi = null; // Track current wagmi client for button visibility
 
     const baseurl = window.SITE_BASEURL || '';
     const buildPersonalizeHref = (squareId) => {
@@ -248,28 +249,19 @@ image: "{{ site.baseurl }}/assets/images/su-OG.png"
       //document.getElementById("select-square").click(); let the customer click it, by then the personalizations will be loaded
     }
 
+    // Open wallet button - shows on mobile when connected via WalletConnect
     const updateOpenWalletButton = () => {
       if (!openWalletButton) return;
-      const hasSession = hasWalletConnectSession();
-      openWalletButton.style.display = hasSession ? "inline-block" : "none";
-    };
-
-    const triggerWalletDeepLink = () => {
-      if (hasWalletConnectSession()) {
-        openWalletFromStore();
-      }
+      const isWalletConnect = currentWagmi?.getAccount?.()?.connector?.id === "walletConnect";
+      const showButton = isMobileDevice() && isWalletConnect;
+      openWalletButton.style.display = showButton ? "inline-block" : "none";
     };
 
     if (openWalletButton) {
       updateOpenWalletButton();
-      window.addEventListener("su-wc-session-change", (event) => {
-        const hasSession = Boolean(event?.detail?.hasSession);
-        openWalletButton.style.display = hasSession ? "inline-block" : "none";
-      });
       openWalletButton.addEventListener("click", () => {
-        if (!openWalletFromStore()) {
-          alert("No WalletConnect session found yet. Tap Connect Wallet first.");
-        }
+        // Opens OS app chooser with placeholder URI (no real session data exposed)
+        openWalletChooser();
       });
     }
 
@@ -278,13 +270,16 @@ image: "{{ site.baseurl }}/assets/images/su-OG.png"
       if (!squareNumber) {
         return alert("Please enter a Square number.");
       }
-      triggerWalletDeepLink();
       txUi.startProcessing(`Minting Square #${squareNumber}. Confirm in your wallet to continue.`);
       const doSendTransaction = async (wagmi) => {
+        const isWalletConnect = wagmi?.getAccount?.()?.connector?.id === "walletConnect";
         txUi.setWalletContext({
-          hasSession: hasWalletConnectSession(),
-          isWalletConnect: wagmi?.getAccount?.()?.connector?.id === "walletConnect",
+          isWalletConnect,
         });
+        // Trigger wallet app open on mobile for WalletConnect
+        if (isMobileDevice() && isWalletConnect) {
+          openWalletChooser();
+        }
         let result;
         try {
           result = await purchaseSquare(squareNumber, wagmi);
@@ -307,6 +302,8 @@ image: "{{ site.baseurl }}/assets/images/su-OG.png"
         }
       };
       await ensureConnected(async (clients) => {
+        currentWagmi = clients;
+        updateOpenWalletButton();
         await ensureCorrectNetwork(clients);
         const { activeNetwork } = getWeb3Config();
         const account = clients.getAccount?.();
