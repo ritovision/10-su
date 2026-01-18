@@ -166,6 +166,7 @@ image: "{{ site.baseurl }}/assets/images/su-OG.png"
       pricing,
       mode: "personalize",
       title: "Personalization status",
+      showPersonalizeTotal: true,
     });
     let topLeftSquareNumber;
     let title;
@@ -278,9 +279,14 @@ image: "{{ site.baseurl }}/assets/images/su-OG.png"
     preflightOutputTextArea.addEventListener("input", (event) => {
       personalizationArgs = null;
       preflightStatusSpan.innerText = "Contents are not valid.";
+      txUi.setPersonalizeCount?.(0);
       // check that each line has a valid square number, title, url, and pixel data
       const lines = event.target.value.trim().split(/\r\n|\n|\r/);
+      if (!lines[0]) {
+        return;
+      }
       let newPersonalizationArgs = [];
+      const uniqueSquares = new Set();
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
         const cols = line.split(/\t/);
@@ -294,6 +300,7 @@ image: "{{ site.baseurl }}/assets/images/su-OG.png"
           preflightStatusSpan.innerText = "ERROR: Row " + (i + 1) + " has invalid square number.";
           return;
         }
+        uniqueSquares.add(squareNumber);
         const titleLength = new TextEncoder().encode(title).length; // UTF-8 byte length
         if (titleLength > 64) {
           preflightStatusSpan.innerText = "ERROR: Row " + (i + 1) + " has title that is too long.";
@@ -330,6 +337,7 @@ image: "{{ site.baseurl }}/assets/images/su-OG.png"
       }
       personalizationArgs = newPersonalizationArgs;
       preflightStatusSpan.innerText = "successful, ready to personalize " + lines.length + " Squares.";
+      txUi.setPersonalizeCount?.(uniqueSquares.size);
     });
 
     // Perform #preflight //////////////////////////////////////////////////////////////////////////////////////////////
