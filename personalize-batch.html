@@ -32,7 +32,7 @@ image: "{{ site.baseurl }}/assets/images/su-OG.png"
     <p>
       <em>If you have any questions, please mail <a
           href="mailto:Su@TenThousandSu.com?subject=Personalize+underlay+batch">Su@TenThousandSu.com</a>. The price to
-        personalize is 0.001 Ether per Square.</em>
+        personalize is <span id="personalize-price-display">0.001 ETH</span> per Square.</em>
     </p>
     <p>
       Use this page to personalize Su Squares you own on TenThousandSu.com. If your Square was previously personalized
@@ -132,6 +132,17 @@ image: "{{ site.baseurl }}/assets/images/su-OG.png"
       neighboring rights to the TenThousandSu.com website. This work is published from the United States.
     </small>
   </footer>
+
+  <script>
+    (function() {
+      var cfg = window.suWeb3 || window.SU_WEB3 || {};
+      var pricing = cfg.pricing;
+      if (pricing && typeof pricing.personalizePriceEth === "number" && pricing.personalizePriceEth !== 0.001) {
+        var el = document.getElementById("personalize-price-display");
+        if (el) el.textContent = pricing.personalizePriceEth + " ETH";
+      }
+    })();
+  </script>
 
   <script type="module">
     import {
