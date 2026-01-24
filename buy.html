@@ -113,6 +113,7 @@ image: "{{ site.baseurl }}/assets/images/su-OG.png"
     let squareExtra;
     let lastMintedSquare = null;
     let currentWagmi = null; // Track current wagmi client for button visibility
+    const skipAvailabilityCheck = Boolean(window.__E2E_SKIP_AVAILABILITY_CHECK);
 
     const baseurl = window.SITE_BASEURL || '';
     const buildPersonalizeHref = (squareId) => {
@@ -224,11 +225,13 @@ image: "{{ site.baseurl }}/assets/images/su-OG.png"
         return alert("Please enter a Square number.");
       }
       // If the personalizations are loaded, check that the Square is available
-      if (squareExtra && squareExtra[squareNumber - 1]) {
-        return alert("Sorry, Square " + squareNumber + " was already purchased.");
-      }
-      if (squarePersonalizations && squarePersonalizations[squareNumber - 1]) {
-        return alert("Sorry, Square " + squareNumber + " was already purchased.");
+      if (!skipAvailabilityCheck) {
+        if (squareExtra && squareExtra[squareNumber - 1]) {
+          return alert("Sorry, Square " + squareNumber + " was already purchased.");
+        }
+        if (squarePersonalizations && squarePersonalizations[squareNumber - 1]) {
+          return alert("Sorry, Square " + squareNumber + " was already purchased.");
+        }
       }
       pickASquareDiv.style.display = "none";
       mintSelectedSquareDiv.style.display = "block";
