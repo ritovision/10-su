@@ -57,7 +57,7 @@ image: "{{ site.baseurl }}/assets/images/su-OG.png"
     <div id="mint-success" style="display:none">
       <p>Your Square is minted.</p>
       <div class="wallet-actions">
-        <a id="personalize-now" class="btn btn-lg" href="{{ site.baseurl }}/personalize">Personalize Now</a>
+        <a id="personalize-now" class="btn btn-lg" href="{{ site.baseurl }}/personalize-modern">Personalize Now</a>
         <button id="mint-another" type="button" class="btn btn-lg">Mint Another</button>
       </div>
     </div>
@@ -117,8 +117,8 @@ image: "{{ site.baseurl }}/assets/images/su-OG.png"
 
     const baseurl = window.SITE_BASEURL || '';
     const buildPersonalizeHref = (squareId) => {
-      if (!squareId) return baseurl + "/personalize";
-      return `${baseurl}/personalize?square=${squareId}`;
+      if (!squareId) return baseurl + "/personalize-modern";
+      return `${baseurl}/personalize-modern?square=${squareId}`;
     };
 
     const showMintState = () => {
