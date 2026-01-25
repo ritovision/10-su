@@ -138,6 +138,7 @@ image: "{{ site.baseurl }}/assets/images/su-OG.png"
     import { getWeb3Config } from "{{ site.baseurl }}/assets/web3/config.js";
     import { personalizeUnderlay } from "{{ site.baseurl }}/assets/web3/services/underlay.js";
     import { buildTxUrl } from "{{ site.baseurl }}/assets/web3/services/explorer-links.js";
+    import { maybeAlertBillboardUpdate } from "{{ site.baseurl }}/assets/web3/alerts.js";
 
     // Elements and state //////////////////////////////////////////////////////////////////////////////////////////////
     const squareNumberInput = document.getElementById("square-number");
@@ -313,6 +314,7 @@ image: "{{ site.baseurl }}/assets/images/su-OG.png"
             txUrl,
             "Transaction confirmed. Your image will show on the Su Squares homepage, which refreshes hourly."
           );
+          maybeAlertBillboardUpdate();
         } catch (error) {
           console.log(error);
           txUi.markError(error?.message || "Transaction failed");
