@@ -83,6 +83,7 @@ image: "{{ site.baseurl }}/assets/images/su-OG.png"
       openWalletChooser,
     } from "{{ site.baseurl }}/assets/web3/foundation.js";
     import { createTxFixture } from "{{ site.baseurl }}/assets/web3/tx/index.js";
+    import { getTxErrorMessage } from "{{ site.baseurl }}/assets/web3/tx/errors.js";
     import { getWeb3Config } from "{{ site.baseurl }}/assets/web3/config.js";
     import { purchaseSquare } from "{{ site.baseurl }}/assets/web3/services/primary.js";
     import { buildTxUrl } from "{{ site.baseurl }}/assets/web3/services/explorer-links.js";
@@ -300,8 +301,9 @@ image: "{{ site.baseurl }}/assets/images/su-OG.png"
           );
         } catch (error) {
           console.log(error);
-          txUi.markError(error?.message || "Transaction failed");
-          return alert(error?.message || "Transaction failed");
+          const message = getTxErrorMessage(error, { isWalletConnect });
+          txUi.markError(message);
+          return alert(message);
         }
       };
       await ensureConnected(async (clients) => {
