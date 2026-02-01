@@ -98,6 +98,7 @@ image: "{{ site.baseurl }}/assets/images/su-OG.png"
     import { buildBlockUrl, buildTokenUrl, getExplorerName } from "{{ site.baseurl }}/assets/web3/services/explorer-links.js";
     import { getWeb3Config } from "{{ site.baseurl }}/assets/web3/config/index.js";
     import { initSquareLocation } from "{{ site.baseurl }}/assets/billboard/wrappers/square-location.js";
+    import { renderSafeLink } from "{{ site.baseurl }}/assets/js/link-utils.js";
 
     document.addEventListener("DOMContentLoaded", () => {
       const baseurl = window.SITE_BASEURL || '';
@@ -177,9 +178,17 @@ image: "{{ site.baseurl }}/assets/images/su-OG.png"
         if (isMinted) {
           const mintedBlock = mintedData[0];
           const blockUrl = buildBlockUrl(mintedBlock);
-          elMinted.innerHTML = blockUrl
-            ? `<a href="${blockUrl}" target="_blank" rel="noopener">Block ${mintedBlock}</a>`
-            : `Block ${mintedBlock}`;
+          elMinted.textContent = "";
+          if (blockUrl) {
+            const mintedAnchor = document.createElement("a");
+            mintedAnchor.href = blockUrl;
+            mintedAnchor.target = "_blank";
+            mintedAnchor.rel = "noopener";
+            mintedAnchor.textContent = `Block ${mintedBlock}`;
+            elMinted.appendChild(mintedAnchor);
+          } else {
+            elMinted.textContent = `Block ${mintedBlock}`;
+          }
 
           const tokenUrl = buildTokenUrl(contracts.primary, squareNumber);
           if (tokenUrl) {
@@ -198,9 +207,17 @@ image: "{{ site.baseurl }}/assets/images/su-OG.png"
           const personalizedBlock = mintedData ? mintedData[1] : null;
           if (personalizedBlock) {
             const personalizedBlockUrl = buildBlockUrl(personalizedBlock);
-            elPersonalized.innerHTML = personalizedBlockUrl
-              ? `<a href="${personalizedBlockUrl}" target="_blank" rel="noopener">Block ${personalizedBlock}</a>`
-              : `Block ${personalizedBlock}`;
+            elPersonalized.textContent = "";
+            if (personalizedBlockUrl) {
+              const personalizedAnchor = document.createElement("a");
+              personalizedAnchor.href = personalizedBlockUrl;
+              personalizedAnchor.target = "_blank";
+              personalizedAnchor.rel = "noopener";
+              personalizedAnchor.textContent = `Block ${personalizedBlock}`;
+              elPersonalized.appendChild(personalizedAnchor);
+            } else {
+              elPersonalized.textContent = `Block ${personalizedBlock}`;
+            }
           } else {
             elPersonalized.innerText = 'Personalized';
           }
@@ -215,11 +232,7 @@ image: "{{ site.baseurl }}/assets/images/su-OG.png"
         const hasPersonalizationLink = isMinted && personalization && personalization[1];
         if (hasPersonalizationLink) {
           const hrefRaw = personalization[1];
-          const normalizedHref = window.suNormalizeHref ? window.suNormalizeHref(hrefRaw) : hrefRaw;
-          elLink.innerHTML = normalizedHref
-            ? `<a id="square-out-link" href="${normalizedHref}" target="_blank" rel="noopener">${hrefRaw}</a>`
-            : hrefRaw;
-          const guardedAnchor = document.getElementById('square-out-link');
+          const guardedAnchor = renderSafeLink(elLink, hrefRaw, { anchorId: "square-out-link" });
           if (guardedAnchor) {
             if (window.SuLeavingLinkGuard && typeof window.SuLeavingLinkGuard.guardLink === 'function') {
               window.SuLeavingLinkGuard.guardLink(guardedAnchor);
