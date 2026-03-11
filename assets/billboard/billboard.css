@@ -74,6 +74,7 @@
 /* Highlight box (selection indicator) */
 .billboard__highlight {
   position: absolute;
+  box-sizing: border-box;
   border: 2px solid var(--color-accent, #ffd700);
   pointer-events: none;
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.4), 0 0 8px rgba(255, 215, 0, 0.8);

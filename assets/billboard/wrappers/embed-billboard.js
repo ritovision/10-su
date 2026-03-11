@@ -151,7 +151,7 @@ export function initEmbedBillboard(options) {
   image.draggable = false;
 
   const highlight = document.createElement("div");
-  highlight.className = "billboard__highlight";
+  highlight.className = "embed-billboard__highlight";
 
   const tooltip = document.createElement("div");
   tooltip.className = "billboard__tooltip";
@@ -462,20 +462,11 @@ export function initEmbedBillboard(options) {
 
   document.addEventListener("keydown", handleDocumentKeydown);
 
-  const shouldShowPanzoomUi = panzoomEnabled && billboard.panZoom && billboard.panZoom.isActive;
+  const shouldShowPanzoomUi = panzoomEnabled;
   if (shouldShowPanzoomUi) {
     const parent = container.parentElement;
-
-    const hint = document.createElement("p");
-    hint.className = "billboard__mobile-hint";
-    hint.textContent = "Pinch to zoom, drag to pan, double tap.";
-    hint.style.color = hintColor;
-    hint.style.marginBottom = "5px";
-    if (parent) {
-      parent.insertBefore(hint, container);
-    } else {
-      container.prepend(hint);
-    }
+    const controls = document.createElement("div");
+    controls.className = "embed-panzoom-ui";
 
     const resetButton = document.createElement("button");
     resetButton.type = "button";
@@ -485,10 +476,20 @@ export function initEmbedBillboard(options) {
     resetButton.style.color = resetButtonColor;
     resetButton.style.borderColor = resetButtonColor;
     resetButtonRef = resetButton;
+
+    const hint = document.createElement("p");
+    hint.className = "billboard__mobile-hint";
+    hint.textContent = "Pinch to zoom, drag to pan, double tap.";
+    hint.style.color = hintColor;
+    hint.style.marginBottom = "0";
+
+    controls.appendChild(resetButton);
+    controls.appendChild(hint);
+
     if (parent) {
-      parent.appendChild(resetButton);
+      parent.insertBefore(controls, container);
     } else {
-      container.appendChild(resetButton);
+      container.prepend(controls);
     }
   }
 
