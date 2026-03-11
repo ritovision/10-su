@@ -172,7 +172,10 @@ export function initEmbedBuilder(options = {}) {
 
     // Update iframe output - src last so users can edit props without scrolling past long URLs
     if (elements.iframeOutput) {
-      const iframe = `<iframe width="600" height="600" frameborder="0" title="Su Squares Billboard" src="${escapeHtml(url)}"></iframe>`;
+      const aspectRatio = state.header === "none" ? 1.3 : 1.8;
+      const width = 600;
+      const height = Math.round(width * aspectRatio);
+      const iframe = `<iframe width="${width}" height="${height}" frameborder="0" title="Su Squares Billboard" src="${escapeHtml(url)}"></iframe>`;
       elements.iframeOutput.value = iframe;
     }
   }
@@ -246,27 +249,27 @@ export function initEmbedBuilder(options = {}) {
 
     // Reset form controls
     if (elements.panzoomToggle) {
-      elements.panzoomToggle.checked = true;
+      elements.panzoomToggle.checked = Boolean(DEFAULT_CONFIG.panzoom);
     }
 
     if (elements.bgTransparent) {
-      elements.bgTransparent.checked = false;
+      elements.bgTransparent.checked = DEFAULT_CONFIG.bg === "transparent";
     }
 
     if (elements.gradientToggle) {
-      elements.gradientToggle.checked = true;
+      elements.gradientToggle.checked = Boolean(DEFAULT_CONFIG.useGradientBackground);
     }
 
     if (elements.bgColorPicker) {
-      elements.bgColorPicker.value = "#000000";
+      elements.bgColorPicker.value = DEFAULT_CONFIG.bg === "transparent" ? "#000000" : DEFAULT_CONFIG.bg;
     }
 
     if (elements.bgColorValue) {
-      elements.bgColorValue.value = "#000000";
+      elements.bgColorValue.value = DEFAULT_CONFIG.bg;
     }
 
     elements.headerRadios.forEach((radio) => {
-      radio.checked = radio.value === "susquares";
+      radio.checked = radio.value === DEFAULT_CONFIG.header;
     });
 
     if (elements.headerSizeValue) {
@@ -572,9 +575,7 @@ export function initEmbedBuilder(options = {}) {
   // Initialize
   bindEvents();
   switchTab("mobile");
-  updateOutputs();
-  updatePreview();
-  updateMobileColorSection();
+  resetToDefaults();
 
   // Return controller
   return {

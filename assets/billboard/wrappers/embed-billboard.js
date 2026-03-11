@@ -104,7 +104,7 @@ export function initEmbedBillboard(options) {
     }
   }
 
-  const shouldUseFullBleed = !headerText && !panzoomEnabled;
+  const shouldUseFullBleed = !headerText;
   document.body.setAttribute("data-fullbleed", shouldUseFullBleed ? "true" : "false");
 
   let readyNotified = false;
@@ -164,6 +164,19 @@ export function initEmbedBillboard(options) {
   // Data state
   let squarePersonalizations = [];
   let positionSquareNumber = 1;
+  let panzoomHintRef = null;
+  let resetButtonRef = null;
+  let hasPanzoomStarted = false;
+  let handlePanzoomTouchMove = null;
+
+  function syncPanzoomUi() {
+    if (panzoomHintRef) {
+      panzoomHintRef.classList.toggle("is-hidden", hasPanzoomStarted);
+    }
+    if (resetButtonRef) {
+      resetButtonRef.classList.toggle("is-visible", hasPanzoomStarted);
+    }
+  }
 
   // Create contained blocked + leaving modals (blocked feeds into leaving modal)
   const blockedModal = createContainedBlockedModal(container);
@@ -244,7 +257,6 @@ export function initEmbedBillboard(options) {
   /**
    * Create the billboard
    */
-  let resetButtonRef = null;
   const billboard = createBillboard(billboardWrapper, {
     mode: "interactive",
     enableGrid: true,
@@ -252,9 +264,7 @@ export function initEmbedBillboard(options) {
     enablePanZoom: panzoomEnabled,
     enableCoreBlocklists: true,
     allowBlockedSelection: true,
-    onZoomChange: (isZoomed) => {
-      if (resetButtonRef) resetButtonRef.classList.toggle("is-visible", isZoomed);
-    },
+    onZoomChange: () => syncPanzoomUi(),
 
     // Embed-specific classes
     gridClassName: "embed-billboard__grid",
@@ -464,33 +474,37 @@ export function initEmbedBillboard(options) {
 
   const shouldShowPanzoomUi = panzoomEnabled;
   if (shouldShowPanzoomUi) {
-    const parent = container.parentElement;
-    const controls = document.createElement("div");
-    controls.className = "embed-panzoom-ui";
+    const hint = document.createElement("div");
+    hint.className = "embed-billboard__hint";
+    hint.style.color = hintColor;
+    hint.textContent = "Pinch to zoom, drag to pan, double tap.";
+    panzoomHintRef = hint;
 
     const resetButton = document.createElement("button");
     resetButton.type = "button";
-    resetButton.className = "billboard__reset-btn";
+    resetButton.className = "embed-billboard__reset-btn";
     resetButton.textContent = "Reset zoom";
-    resetButton.addEventListener("click", () => billboard.reset());
+    resetButton.addEventListener("click", () => {
+      hasPanzoomStarted = false;
+      billboard.reset();
+      syncPanzoomUi();
+    });
     resetButton.style.color = resetButtonColor;
     resetButton.style.borderColor = resetButtonColor;
     resetButtonRef = resetButton;
 
-    const hint = document.createElement("p");
-    hint.className = "billboard__mobile-hint";
-    hint.textContent = "Pinch to zoom, drag to pan, double tap.";
-    hint.style.color = hintColor;
-    hint.style.marginBottom = "0";
+    billboardWrapper.appendChild(hint);
+    container.appendChild(resetButton);
 
-    controls.appendChild(resetButton);
-    controls.appendChild(hint);
+    handlePanzoomTouchMove = (event) => {
+      if (!hasPanzoomStarted && event.touches.length >= 2) {
+        hasPanzoomStarted = true;
+        syncPanzoomUi();
+      }
+    };
+    billboardWrapper.addEventListener("touchmove", handlePanzoomTouchMove, { passive: true });
 
-    if (parent) {
-      parent.insertBefore(controls, container);
-    } else {
-      container.prepend(controls);
-    }
+    syncPanzoomUi();
   }
 
   // Load square data
@@ -539,6 +553,9 @@ export function initEmbedBillboard(options) {
 
     destroy() {
       document.removeEventListener("keydown", handleDocumentKeydown);
+      if (handlePanzoomTouchMove) {
+        billboardWrapper.removeEventListener("touchmove", handlePanzoomTouchMove);
+      }
       stopRuntimeFallback();
       billboard.destroy();
       if (modal) modal.destroy();

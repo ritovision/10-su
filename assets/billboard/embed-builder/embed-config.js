@@ -21,9 +21,9 @@ export const GRADIENT_BACKGROUND =
  */
 export const DEFAULT_CONFIG = {
   panzoom: true,
-  bg: "#000000",
+  bg: "transparent",
   useGradientBackground: true,
-  header: "susquares",
+  header: "none",
   headerColor: DEFAULT_TEXT_COLOR,
   headerSizeValue: HEADER_SIZE_DEFAULT.value,
   headerSizeUnit: HEADER_SIZE_DEFAULT.unit,
@@ -119,12 +119,16 @@ export function parseEmbedConfigFromUrl(url) {
 
   const headerSize = parseHeaderSizeParam(params.get("headerSize"));
   const hasBgParam = params.has("bg");
-  const bgValue = hasBgParam ? params.get("bg") || DEFAULT_CONFIG.bg : DEFAULT_CONFIG.bg;
+  const bgParam = hasBgParam ? params.get("bg") || DEFAULT_CONFIG.bg : null;
+  const useGradientBackground = hasBgParam
+    ? bgParam === "gradient"
+    : DEFAULT_CONFIG.useGradientBackground;
+  const bgValue = useGradientBackground ? DEFAULT_CONFIG.bg : (bgParam || DEFAULT_CONFIG.bg);
 
   return {
     panzoom: parsePanzoomParam(params.get("panzoom")),
     bg: bgValue,
-    useGradientBackground: !hasBgParam,
+    useGradientBackground,
     header: params.get("header") || DEFAULT_CONFIG.header,
     headerSizeValue: headerSize.headerSizeValue,
     headerSizeUnit: headerSize.headerSizeUnit,
@@ -163,12 +167,18 @@ export function buildEmbedUrlFromState(config, baseUrl) {
     params.set("panzoom", "off");
   }
 
-  if (config.useGradientBackground === false) {
+  if (config.useGradientBackground) {
+    if (!DEFAULT_CONFIG.useGradientBackground) {
+      params.set("bg", "gradient");
+    }
+  } else if (!config.useGradientBackground) {
     const bgValue =
       typeof config.bg === "string" && config.bg.trim()
         ? config.bg.trim()
         : DEFAULT_CONFIG.bg;
-    params.set("bg", bgValue);
+    if (DEFAULT_CONFIG.useGradientBackground || bgValue !== DEFAULT_CONFIG.bg) {
+      params.set("bg", bgValue);
+    }
   }
 
   if (config.header && config.header !== DEFAULT_CONFIG.header) {

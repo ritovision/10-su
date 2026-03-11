@@ -76,22 +76,6 @@
   padding: 0;
 }
 
-.embed-panzoom-ui {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%;
-  margin-bottom: 0.25rem;
-}
-
-.embed-panzoom-ui .billboard__reset-btn {
-  margin: 0 0 0.35rem;
-}
-
-.embed-panzoom-ui .billboard__mobile-hint {
-  margin: 0 0 0.5rem;
-}
-
 /* Billboard container - must have position: relative for contained modal */
 .embed-container {
   position: relative;
@@ -101,6 +85,7 @@
   aspect-ratio: 1 / 1;
   flex: 0 0 auto;
   align-self: stretch;
+  background: var(--embed-bg, transparent);
 }
 
 /* Billboard wrapper inside container */
@@ -160,6 +145,64 @@
   pointer-events: none;
   display: none;
   z-index: 10;
+}
+
+.embed-billboard__hint {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 15;
+  width: min(80%, 420px);
+  max-width: 80%;
+  padding: 2.4vw 3.2vw;
+  border-radius: 0.75rem;
+  background: rgba(0, 0, 0, 0.75);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.35);
+  color: #ffd700;
+  font-size: 3.7vw;
+  font-weight: 600;
+  line-height: 1.35;
+  text-align: center;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  transition: opacity 180ms ease;
+}
+
+.embed-billboard__hint.is-hidden {
+  opacity: 0;
+}
+
+.embed-billboard__reset-btn {
+  position: absolute;
+  left: 50%;
+  bottom: 0.35rem;
+  z-index: 15;
+  margin: 0;
+  padding: 2vw 3.7vw;
+  background: rgba(0, 0, 0, 0.78);
+  border: 2px solid currentColor;
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.35);
+  transform: translateX(-50%);
+  display: block;
+  cursor: pointer;
+  font-size: 3.3vw;
+  opacity: 1;
+  transition: opacity 180ms ease;
+}
+
+.embed-billboard__reset-btn.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.embed-billboard__reset-btn:not(.is-visible) {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.embed-billboard__reset-btn:hover {
+  background: rgba(0, 0, 0, 0.9);
 }
 
 /* Tooltip uses core billboard styling */
@@ -233,6 +276,11 @@
     font-size: 0.75rem;
     padding: 0.375rem 0.5rem;
   }
+
+  .embed-billboard__hint {
+    width: 80%;
+    max-width: 80%;
+  }
 }
 
 /* When embedded in very small container */
@@ -258,5 +306,22 @@
 
   .embed-body[data-bg="transparent"] .embed-header__title {
     color: #2d3c96;
+  }
+}
+
+@media (min-width: 701px) {
+  .embed-billboard__hint {
+    padding: 0.55rem 0.8rem;
+    font-size: 1rem;
+  }
+
+  .embed-billboard__reset-btn {
+    padding: 0.45rem 0.85rem;
+    font-size: 0.9rem;
+  }
+
+  .embed-billboard__hint,
+  .embed-billboard__reset-btn {
+    display: none;
   }
 }
