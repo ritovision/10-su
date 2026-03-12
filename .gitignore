@@ -41,6 +41,9 @@ erc721-sepolia/
 nodejs/vitest/coverage/
 /coverage/
 
+### Storybook workspace related ###
+nodejs/storybook/storybook-static/
+
 ### Playwright workspace related ###
 nodejs/playwright/playwright-report/
 nodejs/playwright/test-results/

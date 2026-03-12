@@ -48,6 +48,11 @@ describe('connect-modal/views', () => {
 
     const buttons = container.querySelectorAll('[data-connector-uid]');
     expect(buttons.length).toBe(3);
+    expect(Array.from(buttons).map((button) => button.getAttribute('data-connector-uid'))).toEqual([
+      'injected',
+      'uuid-1',
+      'walletConnect'
+    ]);
 
     const eipButton = container.querySelector('[data-connector-uid="uuid-1"]') as HTMLButtonElement;
     eipButton.click();
@@ -59,6 +64,8 @@ describe('connect-modal/views', () => {
 
     expect(container.textContent).toContain('Choose Mobile Wallets');
     expect(container.textContent).toContain('Last used: Rainbow');
+    const chooserButton = container.querySelector('[data-mobile-wallet-chooser]') as HTMLButtonElement;
+    expect(container.querySelector('.wallet-list')?.lastElementChild).toBe(chooserButton);
 
     const firstButton = buttons[0] as HTMLButtonElement;
     const secondButton = buttons[1] as HTMLButtonElement;

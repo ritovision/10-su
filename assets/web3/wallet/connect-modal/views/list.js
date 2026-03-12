@@ -118,10 +118,16 @@ export function renderListView(target, {
   title.textContent = "Connect your wallet";
   header.appendChild(title);
 
+  const orderedConnectors = [
+    ...connectors.filter((connector) => connector.id !== "walletConnect"),
+    ...connectors.filter((connector) => connector.id === "walletConnect"),
+  ];
+  const hasWalletConnectConnector = orderedConnectors.some((connector) => connector.id === "walletConnect");
+
   const list = document.createElement("div");
   list.className = "wallet-list";
   list.setAttribute("aria-labelledby", "wallet-connect-title");
-  connectors.forEach((connector) => {
+  orderedConnectors.forEach((connector) => {
     const icon = connectorIcon(connector);
     const label = connectorName(connector);
     const uid = connectorUid(connector);
@@ -146,11 +152,11 @@ export function renderListView(target, {
     button.appendChild(labelSpan);
 
     list.appendChild(button);
-
-    if (showMobileWalletChooser && connector.id === "walletConnect") {
-      list.appendChild(createMobileWalletChooserButton(lastUsedMobileWallet));
-    }
   });
+
+  if (showMobileWalletChooser && hasWalletConnectConnector) {
+    list.appendChild(createMobileWalletChooserButton(lastUsedMobileWallet));
+  }
 
   const helper = document.createElement("div");
   helper.className = "wallet-helper";
