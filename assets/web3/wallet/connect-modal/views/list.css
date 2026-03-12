@@ -11,7 +11,7 @@
 .wallet-list {
   display: grid;
   gap: 0.6rem;
-  max-height: 250px;
+  max-height: 280px;
   overflow-y: auto;
 }
 
@@ -46,6 +46,24 @@
   width: 28px;
   height: 28px;
   flex-shrink: 0;
+}
+
+.wallet-list .wallet-mobile-chooser {
+  display: grid;
+  gap: 0.2rem;
+  justify-items: start;
+  text-align: left;
+}
+
+.wallet-mobile-chooser__title {
+  font-size: 0.95rem;
+}
+
+.wallet-mobile-chooser__subtitle {
+  font-size: 0.78rem;
+  color: #fff;
+  font-weight: 600;
+  line-height: 1.25;
 }
 
 @media (max-width: 520px) {

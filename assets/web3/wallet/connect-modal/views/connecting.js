@@ -9,6 +9,7 @@ import { CONNECTING_VARIANT } from "../constants.js";
  * @param {Function} options.onCancel
  * @param {Function} options.onOpenWallet
  * @param {Function} [options.onShowQr]
+ * @param {string} [options.openWalletLabel]
  */
 export function renderConnectingView(target, options = {}) {
   if (!target) return;
@@ -18,6 +19,7 @@ export function renderConnectingView(target, options = {}) {
     onCancel = () => {},
     onOpenWallet = () => {},
     onShowQr = () => {},
+    openWalletLabel = "Open mobile wallet",
   } = options;
 
   const isWalletConnect = variant === CONNECTING_VARIANT.WALLETCONNECT;
@@ -38,11 +40,11 @@ export function renderConnectingView(target, options = {}) {
       ${
         isWalletConnect
           ? `
-            <button class="wallet-btn" type="button" data-open-wallet>Open mobile wallet</button>
+            <button class="wallet-btn" type="button" data-open-wallet>${openWalletLabel}</button>
             <button class="wallet-btn" type="button" data-show-qr>Show QR</button>
           `
           : hasUri
-          ? `<button class="wallet-btn" type="button" data-open-wallet>Open mobile wallet</button>`
+          ? `<button class="wallet-btn" type="button" data-open-wallet>${openWalletLabel}</button>`
           : ""
       }
     </div>

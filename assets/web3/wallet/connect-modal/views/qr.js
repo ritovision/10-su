@@ -3,11 +3,12 @@ import { renderQr as renderQrCanvas } from "../../qr.js";
 /**
  * @param {HTMLElement} target
  * @param {{ qrUri: string, copied: boolean }} state
- * @param {{ onCopy: () => void, onOpenWallet: () => void }} actions
+ * @param {{ onCopy: () => void, onOpenWallet: () => void, openWalletLabel?: string }} actions
  */
 export function renderQrView(target, state, actions) {
   if (!target) return;
   const baseurl = window.SITE_BASEURL || '';
+  const openWalletLabel = actions.openWalletLabel || "Open mobile wallet";
   target.innerHTML = `
     <div class="wallet-modal__header">
       <h2 id="wallet-qr-title">Scan with wallet</h2>
@@ -33,7 +34,7 @@ export function renderQrView(target, state, actions) {
       </div>
       <div class="wallet-actions">
         <button class="wallet-btn" type="button" data-copy>${state.copied ? "Copied!" : "Copy link"}</button>
-        <button class="wallet-btn" type="button" data-open-wallet>Open mobile wallet</button>
+        <button class="wallet-btn" type="button" data-open-wallet>${openWalletLabel}</button>
       </div>
     </div>
   `;

@@ -7,6 +7,7 @@ const {
   mockIsMobileDevice,
   mockOpenWalletDeepLink,
   mockRenderListView,
+  mockRenderMobileWalletsView,
   mockRenderQrView,
   mockRenderConnectingView,
   mockRenderErrorView,
@@ -29,6 +30,7 @@ const {
     mockIsMobileDevice: vi.fn((): boolean => false),
     mockOpenWalletDeepLink: vi.fn((_uri: string): boolean => false),
     mockRenderListView: vi.fn(),
+    mockRenderMobileWalletsView: vi.fn(),
     mockRenderQrView: vi.fn(),
     mockRenderConnectingView: vi.fn(),
     mockRenderErrorView: vi.fn(),
@@ -50,6 +52,10 @@ vi.mock('@web3/wallet/wc-constants.js', () => ({
 
 vi.mock('@web3/wallet/connect-modal/views/list.js', () => ({
   renderListView: (...args: unknown[]) => mockRenderListView(...args),
+}));
+
+vi.mock('@web3/wallet/connect-modal/views/mobile-wallets.js', () => ({
+  renderMobileWalletsView: (...args: unknown[]) => mockRenderMobileWalletsView(...args),
 }));
 
 vi.mock('@web3/wallet/connect-modal/views/qr.js', () => ({
@@ -79,6 +85,48 @@ vi.mock('@web3/client/wagmi.js', () => ({
 // Import after mocks are set up
 import { createConnectController } from '@web3/wallet/connect-modal/controller.js';
 import { CONNECTING_VARIANT } from '@web3/wallet/connect-modal/constants.js';
+
+const explorerPayload = {
+  listings: {
+    metamask: {
+      id: 'metamask',
+      name: 'MetaMask',
+      versions: ['2'],
+      chains: ['eip155:1'],
+      image_url: { sm: 'https://images.example/metamask.png' },
+      mobile: {
+        native: 'metamask://',
+        universal: 'https://metamask.app.link',
+      },
+    },
+    rainbow: {
+      id: 'rainbow',
+      name: 'Rainbow',
+      versions: ['2'],
+      chains: ['eip155:1', 'eip155:10'],
+      image_url: { sm: 'https://images.example/rainbow.png' },
+      mobile: {
+        native: 'rainbow://',
+        universal: 'https://rnbwapp.com',
+      },
+    },
+    invalid: {
+      id: 'invalid',
+      name: 'Invalid Wallet',
+      versions: ['1'],
+      chains: ['eip155:1'],
+      image_url: { sm: 'https://images.example/invalid.png' },
+      mobile: {
+        native: 'invalid://',
+        universal: '',
+      },
+    },
+  },
+};
+
+function getLastCall(mockFn: { mock: { calls: any[][] } }) {
+  return mockFn.mock.calls[mockFn.mock.calls.length - 1];
+}
 
 describe('connect-modal/controller.js', () => {
   let container: HTMLElement;
@@ -130,6 +178,7 @@ describe('connect-modal/controller.js', () => {
     // Reset mock implementations
     mockIsMobileDevice.mockReturnValue(false);
     mockOpenWalletDeepLink.mockReturnValue(false);
+    mockRenderMobileWalletsView.mockReset();
     mockWagmiClient.connectors = [];
     mockWagmiClient.connect.mockResolvedValue(undefined);
     mockWagmiClient.getAccount.mockReturnValue({ isConnected: false, address: null });
@@ -151,6 +200,11 @@ describe('connect-modal/controller.js', () => {
     Object.defineProperty(localStorage, 'length', {
       get: () => Object.keys(localStorageMock).length,
       configurable: true,
+    });
+
+    (globalThis as any).fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue(explorerPayload),
     });
   });
 
@@ -241,6 +295,267 @@ describe('connect-modal/controller.js', () => {
       const result = await openPromise;
       expect(result).toEqual(connectedAccount);
       expect(shell.hide).toHaveBeenCalled();
+    });
+  });
+
+  describe('mobile wallet chooser', () => {
+    it('does not fetch explorer wallets until the chooser is opened', async () => {
+      mockIsMobileDevice.mockReturnValue(true);
+      const wcConnector = createMockConnector({ id: 'walletConnect', name: 'WalletConnect' });
+      mockWagmiClient.connectors = [wcConnector];
+
+      const controller = createConnectController(shell);
+      const openPromise = controller.open();
+
+      await vi.waitFor(() => {
+        expect(mockRenderListView).toHaveBeenCalled();
+      });
+
+      const [, renderOptions] = mockRenderListView.mock.calls[0];
+      expect(renderOptions.showMobileWalletChooser).toBe(true);
+      expect((globalThis as any).fetch).not.toHaveBeenCalled();
+
+      renderOptions.onOpenMobileWalletChooser();
+
+      await vi.waitFor(() => {
+        const [, chooserOptions] = getLastCall(mockRenderMobileWalletsView) || [];
+        expect(chooserOptions.status).toBe('loaded');
+      });
+
+      const [, chooserOptions] = getLastCall(mockRenderMobileWalletsView);
+      expect((globalThis as any).fetch).toHaveBeenCalledTimes(1);
+      expect(chooserOptions.wallets.map((wallet: any) => wallet.id)).toEqual(['metamask', 'rainbow']);
+
+      controller.close();
+      await openPromise;
+    });
+
+    it('hides the chooser entry when not on mobile', async () => {
+      mockIsMobileDevice.mockReturnValue(false);
+      const wcConnector = createMockConnector({ id: 'walletConnect', name: 'WalletConnect' });
+      mockWagmiClient.connectors = [wcConnector];
+
+      const controller = createConnectController(shell);
+      const openPromise = controller.open();
+
+      await vi.waitFor(() => {
+        expect(mockRenderListView).toHaveBeenCalled();
+      });
+
+      const [, renderOptions] = mockRenderListView.mock.calls[0];
+      expect(renderOptions.showMobileWalletChooser).toBe(false);
+      expect((globalThis as any).fetch).not.toHaveBeenCalled();
+
+      controller.close();
+      await openPromise;
+    });
+
+    it('caches explorer wallets across modal reopen', async () => {
+      mockIsMobileDevice.mockReturnValue(true);
+      const wcConnector = createMockConnector({ id: 'walletConnect', name: 'WalletConnect' });
+      mockWagmiClient.connectors = [wcConnector];
+
+      const controller = createConnectController(shell);
+
+      const firstOpenPromise = controller.open();
+      await vi.waitFor(() => {
+        expect(mockRenderListView).toHaveBeenCalled();
+      });
+      let [, renderOptions] = getLastCall(mockRenderListView);
+      renderOptions.onOpenMobileWalletChooser();
+      await vi.waitFor(() => {
+        expect((globalThis as any).fetch).toHaveBeenCalledTimes(1);
+      });
+      controller.close();
+      await firstOpenPromise;
+
+      const secondOpenPromise = controller.open();
+      await vi.waitFor(() => {
+        expect(mockRenderListView.mock.calls.length).toBeGreaterThan(1);
+      });
+      [, renderOptions] = getLastCall(mockRenderListView);
+      renderOptions.onOpenMobileWalletChooser();
+      await vi.waitFor(() => {
+        const [, chooserOptions] = getLastCall(mockRenderMobileWalletsView) || [];
+        expect(chooserOptions.status).toBe('loaded');
+      });
+      expect((globalThis as any).fetch).toHaveBeenCalledTimes(1);
+
+      controller.close();
+      await secondOpenPromise;
+    });
+
+    it('uses the selected chooser wallet link when WalletConnect emits a URI', async () => {
+      mockIsMobileDevice.mockReturnValue(true);
+      mockOpenWalletDeepLink.mockReturnValue(true);
+
+      const mockProvider = {
+        on: vi.fn(),
+        off: vi.fn(),
+        removeListener: vi.fn(),
+      };
+      const wcConnector = createMockConnector({
+        id: 'walletConnect',
+        name: 'WalletConnect',
+        getProvider: vi.fn(async () => mockProvider),
+      });
+      mockWagmiClient.connectors = [wcConnector];
+      mockWagmiClient.connect.mockImplementation(async () => {
+        const onHandler = mockProvider.on.mock.calls.find((call: any[]) => call[0] === 'display_uri');
+        if (onHandler) {
+          onHandler[1]('wc:chooser-uri@2');
+        }
+      });
+      mockWagmiClient.getAccount.mockReturnValue({
+        isConnected: true,
+        address: '0xchooser',
+        connector: { id: 'walletConnect' },
+      });
+
+      const controller = createConnectController(shell);
+      const openPromise = controller.open();
+
+      await vi.waitFor(() => {
+        expect(mockRenderListView).toHaveBeenCalled();
+      });
+
+      const [, renderOptions] = mockRenderListView.mock.calls[0];
+      renderOptions.onOpenMobileWalletChooser();
+
+      await vi.waitFor(() => {
+        const [, chooserOptions] = getLastCall(mockRenderMobileWalletsView) || [];
+        expect(chooserOptions.status).toBe('loaded');
+      });
+
+      const [, chooserOptions] = getLastCall(mockRenderMobileWalletsView);
+      chooserOptions.onSelect('metamask');
+
+      await vi.waitFor(() => {
+        expect(mockOpenWalletDeepLink).toHaveBeenCalledWith('metamask://wc?uri=wc%3Achooser-uri%402');
+      });
+
+      await openPromise;
+    });
+
+    it('falls back to the raw WalletConnect URI when chooser links are unusable', async () => {
+      mockIsMobileDevice.mockReturnValue(true);
+      mockOpenWalletDeepLink.mockReturnValue(true);
+      (globalThis as any).fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: vi.fn().mockResolvedValue({
+          listings: {
+            broken: {
+              id: 'broken',
+              name: 'Broken Wallet',
+              versions: ['2'],
+              chains: ['eip155:1'],
+              image_url: { sm: 'https://images.example/broken.png' },
+              mobile: {
+                native: 'not-a-valid-link',
+                universal: '',
+              },
+            },
+          },
+        }),
+      });
+
+      const mockProvider = {
+        on: vi.fn(),
+        off: vi.fn(),
+        removeListener: vi.fn(),
+      };
+      const wcConnector = createMockConnector({
+        id: 'walletConnect',
+        name: 'WalletConnect',
+        getProvider: vi.fn(async () => mockProvider),
+      });
+      mockWagmiClient.connectors = [wcConnector];
+      mockWagmiClient.connect.mockImplementation(async () => {
+        const onHandler = mockProvider.on.mock.calls.find((call: any[]) => call[0] === 'display_uri');
+        if (onHandler) {
+          onHandler[1]('wc:raw-uri@2');
+        }
+      });
+      mockWagmiClient.getAccount.mockReturnValue({
+        isConnected: true,
+        address: '0xbroken',
+        connector: { id: 'walletConnect' },
+      });
+
+      const controller = createConnectController(shell);
+      const openPromise = controller.open();
+
+      await vi.waitFor(() => {
+        expect(mockRenderListView).toHaveBeenCalled();
+      });
+
+      const [, renderOptions] = mockRenderListView.mock.calls[0];
+      renderOptions.onOpenMobileWalletChooser();
+
+      await vi.waitFor(() => {
+        const [, chooserOptions] = getLastCall(mockRenderMobileWalletsView) || [];
+        expect(chooserOptions.status).toBe('loaded');
+      });
+
+      const [, chooserOptions] = getLastCall(mockRenderMobileWalletsView);
+      chooserOptions.onSelect('broken');
+
+      await vi.waitFor(() => {
+        expect(mockOpenWalletDeepLink).toHaveBeenCalledWith('wc:raw-uri@2');
+      });
+
+      await openPromise;
+    });
+
+    it('keeps the regular WalletConnect button on the raw URI flow even when a chooser wallet is stored', async () => {
+      mockIsMobileDevice.mockReturnValue(true);
+      mockOpenWalletDeepLink.mockReturnValue(true);
+      localStorage.setItem('su.wallet.mobileWallet.lastUsed', JSON.stringify({
+        id: 'metamask',
+        name: 'MetaMask',
+        iconUrl: 'https://images.example/metamask.png',
+        nativeLink: 'metamask://',
+        universalLink: 'https://metamask.app.link',
+      }));
+
+      const mockProvider = {
+        on: vi.fn(),
+        off: vi.fn(),
+        removeListener: vi.fn(),
+      };
+      const wcConnector = createMockConnector({
+        id: 'walletConnect',
+        name: 'WalletConnect',
+        getProvider: vi.fn(async () => mockProvider),
+      });
+      mockWagmiClient.connectors = [wcConnector];
+      mockWagmiClient.connect.mockImplementation(async () => {
+        const onHandler = mockProvider.on.mock.calls.find((call: any[]) => call[0] === 'display_uri');
+        if (onHandler) {
+          onHandler[1]('wc:generic-uri@2');
+        }
+      });
+      mockWagmiClient.getAccount.mockReturnValue({
+        isConnected: true,
+        address: '0xgeneric',
+        connector: { id: 'walletConnect' },
+      });
+
+      const controller = createConnectController(shell);
+      const openPromise = controller.open();
+
+      await vi.waitFor(() => {
+        expect(mockRenderListView).toHaveBeenCalled();
+      });
+
+      const [, renderOptions] = mockRenderListView.mock.calls[0];
+      await renderOptions.onSelect(wcConnector);
+
+      await vi.waitFor(() => {
+        expect(mockOpenWalletDeepLink).toHaveBeenCalledWith('wc:generic-uri@2');
+      });
+
+      await openPromise;
     });
   });
 

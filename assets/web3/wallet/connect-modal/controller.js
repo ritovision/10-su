@@ -3,12 +3,21 @@ import { isMobileDevice, openWalletDeepLink } from "../wc-constants.js";
 import { createConnectStore } from "./state.js";
 import { CONNECTING_VARIANT } from "./constants.js";
 import { renderListView } from "./views/list.js";
+import { renderMobileWalletsView } from "./views/mobile-wallets.js";
 import { renderQrView } from "./views/qr.js";
 import { renderConnectingView } from "./views/connecting.js";
 import { renderErrorView } from "./views/error.js";
 import { renderCanceledView } from "./views/canceled.js";
 import { loadWagmiClient } from "../../client/wagmi.js";
+import { getWeb3Config } from "../../config/index.js";
 import { createDebugLogger } from "../../config/logger.js";
+import {
+  buildMobileWalletLaunchUrl,
+  clearStoredMobileWallet,
+  normalizeExplorerWallets,
+  resolveStoredMobileWallet,
+  writeStoredMobileWallet,
+} from "./mobile-wallets.js";
 
 const log = createDebugLogger("wallet-connect");
 
@@ -59,6 +68,12 @@ function clearWalletConnectStorage(options = {}) {
   }
 }
 
+function filterMobileWallets(wallets, filterValue) {
+  const query = (filterValue || "").trim().toLowerCase();
+  if (!query) return wallets;
+  return wallets.filter((wallet) => wallet.name.toLowerCase().includes(query));
+}
+
 export function createConnectController(shell) {
   const store = createConnectStore();
   let wagmi = null;
@@ -66,16 +81,162 @@ export function createConnectController(shell) {
   let accountUnsubscribe = null;
   let resolver = null;
   let visible = false;
+  let mobileWalletCache = null;
+  let mobileWalletRequest = null;
+
+  const getWalletConnectConnector = () =>
+    connectors.find((connector) => connector.id === "walletConnect") || null;
+
+  const getReturnView = (state) => (state.walletConnectFlow === "chooser" ? "mobileWallets" : "list");
+
+  const getOpenWalletLabel = (state) =>
+    state.walletConnectFlow === "chooser" && state.selectedMobileWallet?.name
+      ? `Open ${state.selectedMobileWallet.name}`
+      : "Open mobile wallet";
+
+  const launchWalletUri = (uri, flow, wallet) => {
+    if (!uri) return false;
+    if (flow === "chooser" && wallet) {
+      const walletLaunchUrl = buildMobileWalletLaunchUrl(wallet, uri);
+      if (walletLaunchUrl) return openWalletDeepLink(walletLaunchUrl);
+    }
+    return openWalletDeepLink(uri);
+  };
+
+  const openCurrentWallet = () => {
+    const state = store.getState();
+    return launchWalletUri(state.qrUri, state.walletConnectFlow, state.selectedMobileWallet);
+  };
+
+  const syncStoredMobileWallet = (wallets) => {
+    const lastUsedWallet = resolveStoredMobileWallet(wallets);
+    store.setState((prev) => ({
+      ...prev,
+      lastUsedMobileWallet: lastUsedWallet,
+      selectedMobileWallet:
+        prev.selectedMobileWallet && wallets.some((wallet) => wallet.id === prev.selectedMobileWallet.id)
+          ? wallets.find((wallet) => wallet.id === prev.selectedMobileWallet.id) || prev.selectedMobileWallet
+          : prev.selectedMobileWallet,
+    }));
+    return lastUsedWallet;
+  };
+
+  const loadMobileWallets = async (options = {}) => {
+    const force = Boolean(options.force);
+
+    if (force) {
+      mobileWalletCache = null;
+      mobileWalletRequest = null;
+    }
+
+    if (mobileWalletCache && !force) {
+      syncStoredMobileWallet(mobileWalletCache);
+      store.setState({
+        mobileWalletsStatus: "loaded",
+        mobileWallets: mobileWalletCache,
+        mobileWalletError: "",
+      });
+      return mobileWalletCache;
+    }
+
+    if (mobileWalletRequest && !force) {
+      store.setState({
+        mobileWalletsStatus: "loading",
+        mobileWalletError: "",
+      });
+      return mobileWalletRequest;
+    }
+
+    const projectId = getWeb3Config().walletConnectProjectId;
+    const requestUrl = `https://explorer-api.walletconnect.com/v3/wallets?projectId=${encodeURIComponent(projectId)}`;
+
+    store.setState({
+      mobileWalletsStatus: "loading",
+      mobileWalletError: "",
+    });
+
+    mobileWalletRequest = fetch(requestUrl)
+      .then(async (response) => {
+        if (!response.ok) {
+          throw new Error("Unable to load wallets right now.");
+        }
+        const payload = await response.json();
+        const wallets = normalizeExplorerWallets(payload);
+        mobileWalletCache = wallets;
+        syncStoredMobileWallet(wallets);
+        store.setState({
+          mobileWalletsStatus: "loaded",
+          mobileWallets: wallets,
+          mobileWalletError: "",
+        });
+        return wallets;
+      })
+      .catch((error) => {
+        log("mobile wallet explorer error", error);
+        store.setState({
+          mobileWalletsStatus: "error",
+          mobileWalletError: "Unable to load wallets right now. Try again.",
+        });
+        throw error;
+      })
+      .finally(() => {
+        mobileWalletRequest = null;
+      });
+
+    return mobileWalletRequest;
+  };
 
   const render = () => {
     if (!shell?.content) return;
     const state = store.getState();
 
     switch (state.view) {
+      case "mobileWallets":
+        shell.setAria({ labelledBy: "wallet-mobile-wallets-title", describedBy: "wallet-mobile-wallets-helper" });
+        shell.setBackHandler(() => {
+          store.setState({
+            view: "list",
+            walletConnectFlow: "generic",
+            selectedMobileWallet: null,
+            mobileWalletFilter: "",
+          });
+        });
+        renderMobileWalletsView(shell.content, {
+          status: state.mobileWalletsStatus,
+          wallets: filterMobileWallets(state.mobileWallets, state.mobileWalletFilter),
+          filterValue: state.mobileWalletFilter,
+          errorMessage: state.mobileWalletError,
+          selectedWalletId: state.selectedMobileWallet?.id || null,
+          lastUsedWalletId: state.lastUsedMobileWallet?.id || null,
+          onSelect: (walletId) => {
+            const selectedWallet = state.mobileWallets.find((wallet) => wallet.id === walletId);
+            const walletConnectConnector = getWalletConnectConnector();
+            if (!selectedWallet || !walletConnectConnector) return;
+            writeStoredMobileWallet(selectedWallet);
+            store.setState({
+              selectedMobileWallet: selectedWallet,
+              lastUsedMobileWallet: selectedWallet,
+              walletConnectFlow: "chooser",
+            });
+            return handleConnector(walletConnectConnector);
+          },
+          onRetry: () => {
+            void loadMobileWallets({ force: true });
+          },
+          onFilterChange: (value) => {
+            store.setState({ mobileWalletFilter: value });
+          },
+        });
+        break;
       case "qr":
         shell.setAria({ labelledBy: "wallet-qr-title", describedBy: undefined });
         shell.setBackHandler(() => {
-          store.setState({ view: "list", qrUri: "", copied: false });
+          const nextView = getReturnView(state);
+          store.setState({
+            view: nextView,
+            qrUri: "",
+            copied: false,
+          });
         });
         renderQrView(shell.content, state, {
           onCopy: () => {
@@ -83,8 +244,8 @@ export function createConnectController(shell) {
               navigator.clipboard.writeText(state.qrUri).then(() => setCopied(true));
             }
           },
-          // Real URI for initial connection - this is the ONLY place with actual WC session data
-          onOpenWallet: () => openWalletDeepLink(state.qrUri),
+          onOpenWallet: openCurrentWallet,
+          openWalletLabel: getOpenWalletLabel(state),
         });
         break;
       case "connecting":
@@ -94,9 +255,9 @@ export function createConnectController(shell) {
           variant: state.connectingVariant || CONNECTING_VARIANT.DEFAULT,
           hasUri: Boolean(state.qrUri),
           onCancel: () => finalize(null),
-          // Real URI for initial connection
-          onOpenWallet: () => openWalletDeepLink(state.qrUri),
+          onOpenWallet: openCurrentWallet,
           onShowQr: () => store.setState({ view: "qr" }),
+          openWalletLabel: getOpenWalletLabel(state),
         });
         break;
       case "error":
@@ -104,13 +265,13 @@ export function createConnectController(shell) {
         shell.setBackHandler(null);
         renderErrorView(shell.content, {
           message: state.errorMessage,
-          onBack: () => store.setState({ view: "list", errorMessage: "" }),
+          onBack: () => store.setState({ view: getReturnView(state), errorMessage: "" }),
         });
         break;
       case "canceled":
         shell.setAria({ labelledBy: "wallet-canceled-title", describedBy: "wallet-canceled-message" });
         shell.setBackHandler(null);
-        renderCanceledView(shell.content, () => store.setState({ view: "list" }));
+        renderCanceledView(shell.content, () => store.setState({ view: getReturnView(state) }));
         break;
       case "list":
       default:
@@ -118,8 +279,28 @@ export function createConnectController(shell) {
         shell.setBackHandler(null);
         renderListView(shell.content, {
           connectors,
-          onSelect: handleConnector,
+          onSelect: (connector) => {
+            store.setState({
+              walletConnectFlow: "generic",
+              selectedMobileWallet: null,
+            });
+            return handleConnector(connector);
+          },
           onOpenInfo: handleInfoModal,
+          showMobileWalletChooser: isMobileDevice() && Boolean(getWalletConnectConnector()),
+          onOpenMobileWalletChooser: () => {
+            store.setState({
+              view: "mobileWallets",
+              walletConnectFlow: "chooser",
+              selectedMobileWallet: null,
+              mobileWalletFilter: "",
+              mobileWalletError: "",
+              mobileWalletsStatus: mobileWalletCache ? "loaded" : "loading",
+              mobileWallets: mobileWalletCache || [],
+            });
+            void loadMobileWallets();
+          },
+          lastUsedMobileWallet: state.lastUsedMobileWallet,
         });
         break;
     }
@@ -167,6 +348,10 @@ export function createConnectController(shell) {
 
   const handleConnector = async (connector) => {
     let displayUriHandler = null;
+    const connectionState = store.getState();
+    const walletConnectFlow = connectionState.walletConnectFlow;
+    const selectedMobileWallet = walletConnectFlow === "chooser" ? connectionState.selectedMobileWallet : null;
+
     try {
       const isWalletConnect = connector.id === "walletConnect";
       const mobileCapable = isMobileDevice();
@@ -174,12 +359,10 @@ export function createConnectController(shell) {
       if (isWalletConnect) {
         const provider = await connector.getProvider();
         if (provider) {
-          // Listen for display_uri and store in-memory (not localStorage)
           displayUriHandler = (uri) => {
             setQr(uri);
             if (mobileCapable) {
-              // On mobile, trigger deep link immediately during connection
-              openWalletDeepLink(uri);
+              launchWalletUri(uri, walletConnectFlow, selectedMobileWallet);
               setConnectingVariant(CONNECTING_VARIANT.WALLETCONNECT);
               setView("connecting");
             } else {
@@ -204,13 +387,12 @@ export function createConnectController(shell) {
       if (account?.isConnected) {
         log("Connected successfully", {
           address: account.address,
-          connector: account.connector?.id
+          connector: account.connector?.id,
         });
         finalize(account);
       } else {
         finalize(null);
       }
-
     } catch (error) {
       log("connect error", error);
       const message = typeof error?.message === "string" ? error.message : "";
@@ -276,6 +458,15 @@ export function createConnectController(shell) {
     wagmi = await loadWagmiClient();
     connectors = filterConnectors(wagmi.connectors || []);
     store.reset();
+    if (mobileWalletCache) {
+      const lastUsedWallet = resolveStoredMobileWallet(mobileWalletCache);
+      if (!lastUsedWallet) {
+        clearStoredMobileWallet();
+      }
+      store.setState({
+        lastUsedMobileWallet: lastUsedWallet,
+      });
+    }
     shell.setOnRequestClose(() => finalize(null));
     visible = true;
     shell.show();
@@ -285,7 +476,7 @@ export function createConnectController(shell) {
       if (account.isConnected) {
         log("Account connected via watcher", {
           address: account.address,
-          connector: account.connector?.id
+          connector: account.connector?.id,
         });
         finalize(wagmi.getAccount());
       }

@@ -1,5 +1,6 @@
 @import url("./base/modal-shell.css");
 @import url("./connect-modal/views/list.css");
+@import url("./connect-modal/views/mobile-wallets.css");
 @import url("./connect-modal/views/qr.css");
 @import url("./connect-modal/views/connecting.css");
 @import url("./account-modal/account-modal.css");

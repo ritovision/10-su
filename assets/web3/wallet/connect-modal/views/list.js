@@ -45,6 +45,27 @@ function isUnsafeIconUrl(url) {
   return false;
 }
 
+function createMobileWalletChooserButton(lastUsedMobileWallet) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "wallet-mobile-chooser";
+  button.dataset.mobileWalletChooser = "true";
+
+  const title = document.createElement("span");
+  title.className = "wallet-mobile-chooser__title";
+  title.textContent = "Choose Mobile Wallets";
+
+  const subtitle = document.createElement("span");
+  subtitle.className = "wallet-mobile-chooser__subtitle";
+  subtitle.textContent = lastUsedMobileWallet?.name
+    ? `Last used: ${lastUsedMobileWallet.name}`
+    : "Open your wallet app directly with its mobile link.";
+
+  button.appendChild(title);
+  button.appendChild(subtitle);
+  return button;
+}
+
 /**
  * Render the wallet list view.
  * @param {HTMLElement} target
@@ -52,8 +73,18 @@ function isUnsafeIconUrl(url) {
  * @param {Array<import("@wagmi/core").Connector>} params.connectors
  * @param {(connector: import("@wagmi/core").Connector) => void} params.onSelect
  * @param {() => void} params.onOpenInfo
+ * @param {boolean} [params.showMobileWalletChooser]
+ * @param {() => void} [params.onOpenMobileWalletChooser]
+ * @param {{ name?: string } | null} [params.lastUsedMobileWallet]
  */
-export function renderListView(target, { connectors, onSelect, onOpenInfo }) {
+export function renderListView(target, {
+  connectors,
+  onSelect,
+  onOpenInfo,
+  showMobileWalletChooser = false,
+  onOpenMobileWalletChooser = () => {},
+  lastUsedMobileWallet = null,
+}) {
   if (!target) return;
   if (!connectors || connectors.length === 0) {
     target.textContent = "";
@@ -115,6 +146,10 @@ export function renderListView(target, { connectors, onSelect, onOpenInfo }) {
     button.appendChild(labelSpan);
 
     list.appendChild(button);
+
+    if (showMobileWalletChooser && connector.id === "walletConnect") {
+      list.appendChild(createMobileWalletChooserButton(lastUsedMobileWallet));
+    }
   });
 
   const helper = document.createElement("div");
@@ -159,5 +194,9 @@ export function renderListView(target, { connectors, onSelect, onOpenInfo }) {
 
   target.querySelector("[data-info-modal]")?.addEventListener("click", () => {
     onOpenInfo();
+  });
+
+  target.querySelector("[data-mobile-wallet-chooser]")?.addEventListener("click", () => {
+    onOpenMobileWalletChooser();
   });
 }

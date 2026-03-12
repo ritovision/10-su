@@ -1,6 +1,6 @@
 import { ChainKey, DEFAULT_CHAIN, NETWORK_PRESETS, normalizeChainKey } from "./networks.js";
 
-const DEFAULT_WALLETCONNECT_PROJECT_ID = "2aca272d18deb10ff748260da5f78bfd";
+const DEFAULT_WALLETCONNECT_PROJECT_ID = "9edfdfc4534a49747598cc05a3b44f59";
 
 function parseBool(value, fallback = false) {
   if (typeof value === "boolean") return value;

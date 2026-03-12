@@ -1,5 +1,6 @@
 import { createTestContainer, cleanupTestContainer } from '@test-helpers/dom';
 import { renderListView } from '@web3/wallet/connect-modal/views/list.js';
+import { renderMobileWalletsView } from '@web3/wallet/connect-modal/views/mobile-wallets.js';
 import { renderQrView } from '@web3/wallet/connect-modal/views/qr.js';
 import { renderErrorView } from '@web3/wallet/connect-modal/views/error.js';
 import { renderConnectingView } from '@web3/wallet/connect-modal/views/connecting.js';
@@ -36,7 +37,14 @@ describe('connect-modal/views', () => {
     const onSelect = vi.fn();
     const onOpenInfo = vi.fn();
 
-    renderListView(container, { connectors, onSelect, onOpenInfo });
+    renderListView(container, {
+      connectors,
+      onSelect,
+      onOpenInfo,
+      showMobileWalletChooser: true,
+      onOpenMobileWalletChooser: vi.fn(),
+      lastUsedMobileWallet: { name: 'Rainbow' }
+    });
 
     const buttons = container.querySelectorAll('[data-connector-uid]');
     expect(buttons.length).toBe(3);
@@ -48,6 +56,9 @@ describe('connect-modal/views', () => {
     const infoButton = container.querySelector('[data-info-modal]') as HTMLButtonElement;
     infoButton.click();
     expect(onOpenInfo).toHaveBeenCalledTimes(1);
+
+    expect(container.textContent).toContain('Choose Mobile Wallets');
+    expect(container.textContent).toContain('Last used: Rainbow');
 
     const firstButton = buttons[0] as HTMLButtonElement;
     const secondButton = buttons[1] as HTMLButtonElement;
@@ -74,7 +85,11 @@ describe('connect-modal/views', () => {
 
     renderQrMock.mockResolvedValueOnce(undefined);
 
-    renderQrView(container, { qrUri: 'wc:test', copied: false }, { onCopy, onOpenWallet });
+    renderQrView(container, { qrUri: 'wc:test', copied: false }, {
+      onCopy,
+      onOpenWallet,
+      openWalletLabel: 'Open MetaMask'
+    });
 
     const copyButton = container.querySelector('[data-copy]') as HTMLButtonElement;
     const openButton = container.querySelector('[data-open-wallet]') as HTMLButtonElement;
@@ -83,6 +98,7 @@ describe('connect-modal/views', () => {
 
     expect(onCopy).toHaveBeenCalledTimes(1);
     expect(onOpenWallet).toHaveBeenCalledTimes(1);
+    expect(openButton.textContent).toContain('Open MetaMask');
 
     await flushMicrotasks();
 
@@ -123,7 +139,8 @@ describe('connect-modal/views', () => {
       hasUri: true,
       onCancel,
       onOpenWallet,
-      onShowQr
+      onShowQr,
+      openWalletLabel: 'Open Rainbow'
     });
 
     const cancelButton = container.querySelector('[data-cancel]') as HTMLButtonElement;
@@ -137,6 +154,81 @@ describe('connect-modal/views', () => {
     expect(onCancel).toHaveBeenCalledTimes(1);
     expect(onOpenWallet).toHaveBeenCalledTimes(1);
     expect(onShowQr).toHaveBeenCalledTimes(1);
+    expect(openButton.textContent).toContain('Open Rainbow');
+
+    cleanupTestContainer(container);
+  });
+
+  it('renders the mobile wallet chooser loading, loaded, and retry states', () => {
+    const container = createTestContainer();
+    const onSelect = vi.fn();
+    const onRetry = vi.fn();
+    const onFilterChange = vi.fn();
+
+    renderMobileWalletsView(container, {
+      status: 'loading',
+      wallets: [],
+      filterValue: '',
+      onSelect,
+      onRetry,
+      onFilterChange
+    });
+
+    expect(container.textContent).toContain('Loading Wallets');
+    const filterInput = container.querySelector('#wallet-mobile-wallet-filter') as HTMLInputElement;
+    expect(filterInput.disabled).toBe(true);
+    expect(container.textContent).toContain('Filter wallets by name:');
+
+    const chooserContent = container.querySelector('[data-mobile-wallet-content]') as HTMLElement;
+    Object.defineProperty(chooserContent, 'offsetHeight', {
+      value: 312,
+      configurable: true
+    });
+
+    renderMobileWalletsView(container, {
+      status: 'loaded',
+      wallets: [
+        { id: 'metamask', name: 'MetaMask', iconUrl: 'https://images.example/metamask.png' },
+        { id: 'rainbow', name: 'Rainbow', iconUrl: '' }
+      ],
+      filterValue: 'meta',
+      selectedWalletId: 'metamask',
+      lastUsedWalletId: 'rainbow',
+      onSelect,
+      onRetry,
+      onFilterChange
+    });
+
+    const liveFilter = container.querySelector('#wallet-mobile-wallet-filter') as HTMLInputElement;
+    expect(liveFilter).toBe(filterInput);
+    liveFilter.dispatchEvent(new FocusEvent('focus'));
+    expect(chooserContent.style.height).toBe('312px');
+
+    const walletButton = container.querySelector('[data-mobile-wallet-id="metamask"]') as HTMLButtonElement;
+    walletButton.click();
+    expect(onSelect).toHaveBeenCalledWith('metamask');
+    expect(container.textContent).toContain('Last used');
+
+    liveFilter.value = 'rain';
+    liveFilter.dispatchEvent(new Event('input', { bubbles: true }));
+    expect(onFilterChange).toHaveBeenCalledWith('rain');
+
+    renderMobileWalletsView(container, {
+      status: 'error',
+      wallets: [],
+      filterValue: '',
+      errorMessage: 'Unable to load wallets right now. Try again.',
+      onSelect,
+      onRetry,
+      onFilterChange
+    });
+
+    const retryButton = container.querySelector('[data-mobile-wallet-retry]') as HTMLButtonElement;
+    retryButton.click();
+    expect(onRetry).toHaveBeenCalledTimes(1);
+
+    liveFilter.dispatchEvent(new FocusEvent('blur'));
+    expect(chooserContent.style.height).toBe('');
 
     cleanupTestContainer(container);
   });
