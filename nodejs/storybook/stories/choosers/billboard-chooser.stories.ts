@@ -1,4 +1,5 @@
-﻿import type { Meta, StoryObj } from "@storybook/html";
+import type { Meta, StoryObj } from "@storybook/html";
+import "@assets/billboard/billboard.css";
 import "@assets/square-lookup/styles.css";
 import { attachBillboardChooser } from "@assets/billboard/wrappers/modal-chooser.js";
 

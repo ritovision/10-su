@@ -108,16 +108,20 @@ function renderBillboard() {
         </div>
         <input type="file" id="placement-image-input" accept="image/*" hidden>
         <div class="personalize-billboard__view">
-          <div id="personalize-billboard"></div>
-          <div class="personalize-billboard__loading" id="placement-loading" hidden>
-            <div class="personalize-billboard__loading-text" aria-live="polite">
-              Adding images to table<span class="personalize-billboard__loading-dots" aria-hidden="true">...</span>
-            </div>
-          </div>
-          <div class="personalize-billboard__loading" id="ownership-loading" hidden>
-            <div class="personalize-billboard__loading-text" aria-live="polite">
-              Fetching Squares<span class="personalize-billboard__loading-dots" aria-hidden="true">...</span>
-              <span class="personalize-billboard__loading-count" id="ownership-loading-count"></span>
+          <div class="map-container">
+            <div class="map-wrapper">
+              <div id="personalize-billboard"></div>
+              <div class="personalize-billboard__loading" id="placement-loading" hidden>
+                <div class="personalize-billboard__loading-text" aria-live="polite">
+                  Adding images to table<span class="personalize-billboard__loading-dots" aria-hidden="true">...</span>
+                </div>
+              </div>
+              <div class="personalize-billboard__loading" id="ownership-loading" hidden>
+                <div class="personalize-billboard__loading-text" aria-live="polite">
+                  Fetching Squares<span class="personalize-billboard__loading-dots" aria-hidden="true">...</span>
+                  <span class="personalize-billboard__loading-count" id="ownership-loading-count"></span>
+                </div>
+              </div>
             </div>
           </div>
           <button type="button" class="personalize-billboard__locator-btn" id="billboard-locator-hide" hidden>
@@ -125,9 +129,6 @@ function renderBillboard() {
             Hide
           </button>
         </div>
-        <button type="button" class="billboard__reset-btn personalize-billboard__reset" id="personalize-billboard-reset">
-          Reset zoom
-        </button>
         <div class="personalize-billboard__mode-row">
           <div class="personalize-billboard__mode" role="group" aria-label="Billboard mode">
             <button type="button" class="personalize-billboard__mode-btn is-active" data-mode="owned" aria-pressed="true">
@@ -143,7 +144,6 @@ function renderBillboard() {
             <span class="personalize-billboard__toggle-text">Preview Tooltips</span>
           </label>
         </div>
-        <p class="billboard__mobile-hint personalize-billboard__hint">Pinch to zoom, drag to pan.</p>
       </section>
     </div>
   `;

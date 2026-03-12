@@ -1,8 +1,9 @@
 import type { Meta, StoryObj } from "@storybook/html";
 import "@assets/css/main.css";
+import "@assets/billboard/billboard.css";
 import "@assets/css/index.css";
 import "@assets/square-lookup/styles.css";
-import { createPanZoom } from "@assets/js/pan-zoom.js";
+import { initHomepageBillboard } from "@assets/billboard/wrappers/index-billboard.js";
 
 type Story = StoryObj;
 
@@ -33,6 +34,8 @@ let squareDataPromise: Promise<{
   personalizations: SquarePersonalization[];
   extra: SquareExtraEntry[];
 }> | null = null;
+let homepageBillboardHandle: ReturnType<typeof initHomepageBillboard> | null = null;
+let currentMapRoot: HTMLElement | null = null;
 
 function resolveAssetUrl(path: string) {
   if (typeof window === "undefined") return path;
@@ -64,6 +67,8 @@ async function loadSquareData() {
 }
 
 function renderMapStory() {
+  const boardUrl = resolveAssetUrl("/build/wholeSquare.webp");
+
   return `
     <div class="page-home" style="padding: 2rem;">
       <article id="${MAP_ROOT_ID}" style="display: grid; gap: 0.75rem; max-width: 1040px; margin: 0 auto; color: #ffd700;">
@@ -71,18 +76,23 @@ function renderMapStory() {
         <p style="color: #ffd700;">
           Click an empty square to mint an available Su Square. Clicking an already minted and personalized one will activate its hyperlink.
         </p>
-        <p class="mobile-hint" style="color: #ffd700;">Pinch to zoom, drag to pan</p>
-        <a class="map-container" data-map-anchor target="_blank" rel="noopener noreferrer">
-          <div class="map-wrapper">
-            <img data-map-image class="map-image" alt="All Su Squares" />
-            <div class="map-position" data-map-position></div>
-            <div class="map-tooltip" data-map-tooltip style="color: #ffd700;"></div>
-            <div class="map-fence" data-map-fence></div>
-          </div>
-        </a>
-        <button type="button" class="map-reset-btn" data-map-reset>Reset zoom</button>
+        <div class="map-shell">
+          <a id="sb-wheretogo" class="map-container" href="#" target="_blank" rel="noopener noreferrer">
+            <div class="map-wrapper">
+              <img
+                id="sb-theImage"
+                class="map-image"
+                src="${boardUrl}"
+                alt="All Su Squares"
+              >
+              <div id="sb-position" class="map-position"></div>
+              <div id="sb-tooltip" class="map-tooltip" style="color: #ffd700;"></div>
+              <div id="sb-electric-fence" class="map-fence"></div>
+            </div>
+          </a>
+        </div>
         <p data-map-status style="text-align:center; color: #ffd700; margin-top: 0.5rem;">
-          Loading board dataƒ?İ
+          Loading board data...
         </p>
       </article>
     </div>
@@ -96,13 +106,13 @@ function renderFeedStory() {
         <section class="newly-feed__section">
           <strong class="newly-feed__heading">Newly minted</strong>
           <div class="newly-feed__items" data-feed-minted>
-            <p data-feed-placeholder style="margin:0; color: #ffd700;">Loadingƒ?İ</p>
+            <p data-feed-placeholder style="margin:0; color: #ffd700;">Loading...</p>
           </div>
         </section>
         <section class="newly-feed__section">
           <strong class="newly-feed__heading">Latest personalized</strong>
           <div class="newly-feed__items" data-feed-personalized>
-            <p data-feed-placeholder style="margin:0; color: #ffd700;">Loadingƒ?İ</p>
+            <p data-feed-placeholder style="margin:0; color: #ffd700;">Loading...</p>
           </div>
         </section>
       </article>
@@ -110,181 +120,50 @@ function renderFeedStory() {
   `;
 }
 
-function describeSquarePlacement(square: number) {
-  const row = Math.floor((square - 1) / GRID_DIMENSION) + 1;
-  const col = ((square - 1) % GRID_DIMENSION) + 1;
-  return `Row ${row}, Column ${col}`;
+function ensureHomepageBillboard(root: HTMLElement) {
+  if (currentMapRoot && !currentMapRoot.isConnected) {
+    homepageBillboardHandle?.destroy?.();
+    homepageBillboardHandle = null;
+    currentMapRoot = null;
+  }
+
+  if (homepageBillboardHandle && currentMapRoot === root) {
+    return homepageBillboardHandle;
+  }
+
+  homepageBillboardHandle?.destroy?.();
+
+  const mapWrapper = root.querySelector<HTMLElement>(".map-wrapper");
+  const image = root.querySelector<HTMLImageElement>("#sb-theImage");
+  const positionDiv = root.querySelector<HTMLElement>("#sb-position");
+  const tooltipDiv = root.querySelector<HTMLElement>("#sb-tooltip");
+  const fenceContainer = root.querySelector<HTMLElement>("#sb-electric-fence");
+  const linkAnchor = root.querySelector<HTMLAnchorElement>("#sb-wheretogo");
+
+  if (!mapWrapper || !image || !positionDiv || !tooltipDiv || !fenceContainer || !linkAnchor) {
+    return null;
+  }
+
+  homepageBillboardHandle = initHomepageBillboard({
+    mapWrapper,
+    image,
+    positionDiv,
+    tooltipDiv,
+    fenceContainer,
+    linkAnchor,
+    baseurl: window.SITE_BASEURL || "",
+    normalizeHref: window.suNormalizeHref || ((href: string) => href),
+  });
+
+  currentMapRoot = root;
+  return homepageBillboardHandle;
 }
 
-function initMapInteractions(root: HTMLElement, data: { personalizations: SquarePersonalization[]; extra: SquareExtraEntry[] }) {
-  const mapImage = root.querySelector<HTMLImageElement>("[data-map-image]");
-  const positionEl = root.querySelector<HTMLDivElement>("[data-map-position]");
-  const tooltipEl = root.querySelector<HTMLDivElement>("[data-map-tooltip]");
-  const anchor = root.querySelector<HTMLAnchorElement>("[data-map-anchor]");
-  const resetBtn = root.querySelector<HTMLButtonElement>("[data-map-reset]");
-  const statusEl = root.querySelector<HTMLElement>("[data-map-status]");
-  const wrapper = root.querySelector<HTMLElement>(".map-wrapper");
-  if (!mapImage || !positionEl || !tooltipEl || !wrapper) return;
-
-  interface PanZoomController {
-    screenToCanvas: (clientX: number, clientY: number) => { x: number; y: number };
-    reset: () => void;
-    destroy: () => void;
-    isActive: boolean;
-    hasPanned?: () => boolean;
-    scale?: number;
-  }
-
-  const mapImageEl = mapImage;
-  const positionElEl = positionEl;
-  const tooltipElEl = tooltipEl;
-  const wrapperEl = wrapper;
-  const anchorEl = anchor;
-
-  const boardUrl = resolveAssetUrl("/build/wholeSquare.webp");
-  mapImageEl.src = boardUrl;
-  if (statusEl) {
-    statusEl.textContent = "Hover or tap to inspect squares.";
-  }
-
-  const panZoom = createPanZoom(wrapperEl) as PanZoomController;
-  resetBtn?.addEventListener("click", () => {
-    panZoom?.reset?.();
-  });
-
-  const normalizeHref =
-    typeof window !== "undefined" && typeof window.suNormalizeHref === "function"
-      ? window.suNormalizeHref
-      : (href: string) => href;
-
-  let activeSquare = 1;
-
-  function getCellSize() {
-    if (panZoom && panZoom.isActive) {
-      return wrapperEl.offsetWidth / GRID_DIMENSION;
-    }
-    const rect = mapImageEl.getBoundingClientRect();
-    return rect.width ? rect.width / GRID_DIMENSION : 10;
-  }
-
-  function setTooltipPosition(col: number, row: number, cellSize: number) {
-    const isLeftHalf = col < GRID_DIMENSION / 2;
-    const isBottomHalf = row >= GRID_DIMENSION / 2;
-
-    if (isLeftHalf) {
-      tooltipElEl.style.left = `${col * cellSize + cellSize * 1.5}px`;
-      tooltipElEl.style.right = "auto";
-    } else {
-      tooltipElEl.style.left = "auto";
-      tooltipElEl.style.right = `${(GRID_DIMENSION - col - 1) * cellSize + cellSize * 1.5}px`;
-    }
-
-    const horizontalOrigin = isLeftHalf ? "left" : "right";
-    const verticalOrigin = isBottomHalf ? "bottom" : "top";
-    tooltipElEl.style.transformOrigin = `${horizontalOrigin} ${verticalOrigin}`;
-
-    const verticalOffset = isBottomHalf ? -cellSize * 0.5 : cellSize * 1.5;
-    const rawTop = row * cellSize + verticalOffset;
-    const wrapperHeight = wrapperEl.offsetHeight || GRID_DIMENSION * cellSize;
-    const clampedTop = Math.min(Math.max(rawTop, 0), wrapperHeight - cellSize);
-    tooltipElEl.style.top = `${clampedTop}px`;
-
-    if (panZoom && panZoom.isActive && typeof panZoom.scale === "number") {
-      const scale = (panZoom as any).scale || 1;
-      tooltipElEl.style.transform = `scale(${1 / scale})`;
-    } else {
-      tooltipElEl.style.transform = "";
-    }
-  }
-
-  function updateActiveSquare(square: number) {
-    activeSquare = square;
-    const col = (square - 1) % GRID_DIMENSION;
-    const row = Math.floor((square - 1) / GRID_DIMENSION);
-    const cellSize = getCellSize();
-
-    positionElEl.style.display = "block";
-    positionElEl.style.width = `${cellSize}px`;
-    positionElEl.style.height = `${cellSize}px`;
-    positionElEl.style.left = `${col * cellSize}px`;
-    positionElEl.style.top = `${row * cellSize}px`;
-
-    const details = data.personalizations[square - 1];
-    const normalizedHref = details?.[1] ? normalizeHref(details[1]) : "";
-    if (!details) {
-      tooltipElEl.textContent = `Square #${square} is available for sale, click to buy.`;
-      anchorEl?.setAttribute("href", `/buy?square=${square}`);
-    } else if (!details[0] && !details[1]) {
-      tooltipElEl.textContent = `Square #${square} was purchased but not yet personalized.`;
-      anchorEl?.removeAttribute("href");
-    } else {
-      tooltipElEl.textContent = `Square #${square} — ${details[0] || "Personalized square"}`;
-      if (normalizedHref) {
-        anchorEl?.setAttribute("href", normalizedHref);
-      } else {
-        anchorEl?.removeAttribute("href");
-      }
-    }
-
-    if (anchorEl) {
-      anchorEl.setAttribute("title", describeSquarePlacement(square));
-    }
-
-    tooltipElEl.style.display = "block";
-    setTooltipPosition(col, row, cellSize);
-  }
-
-  function clearSelection() {
-    positionElEl.style.display = "none";
-    tooltipElEl.style.display = "none";
-  }
-
-  function getSquareFromPointer(clientX: number, clientY: number) {
-    let x: number;
-    let y: number;
-    if (panZoom && panZoom.isActive) {
-      const coords = panZoom.screenToCanvas(clientX, clientY);
-      x = coords.x;
-      y = coords.y;
-    } else {
-      const rect = mapImageEl.getBoundingClientRect();
-      x = clientX - rect.left;
-      y = clientY - rect.top;
-    }
-    const cellSize = getCellSize();
-    const col = Math.min(Math.max(Math.floor(x / cellSize), 0), GRID_DIMENSION - 1);
-    const row = Math.min(Math.max(Math.floor(y / cellSize), 0), GRID_DIMENSION - 1);
-    return row * GRID_DIMENSION + col + 1;
-  }
-
-  mapImageEl.addEventListener("mousemove", (event) => {
-    const square = getSquareFromPointer(event.clientX, event.clientY);
-    updateActiveSquare(square);
-  });
-
-  mapImageEl.addEventListener("mouseleave", () => {
-    clearSelection();
-  });
-
-  mapImageEl.addEventListener("touchend", (event) => {
-    if (panZoom && typeof (panZoom as any).hasPanned === "function" && (panZoom as any).hasPanned()) {
-      return;
-    }
-    if (event.changedTouches && event.changedTouches[0]) {
-      const touch = event.changedTouches[0];
-      const square = getSquareFromPointer(touch.clientX, touch.clientY);
-      updateActiveSquare(square);
-    }
-  });
-
-  window.addEventListener("resize", () => {
-    if (tooltipElEl.style.display === "block") {
-      updateActiveSquare(activeSquare);
-    }
-  });
-}
-
-function buildFeedItems(entries: Array<{ square: number; row: number; col: number }>, listEl: HTMLElement | null, emptyText: string) {
+function buildFeedItems(
+  entries: Array<{ square: number; row: number; col: number }>,
+  listEl: HTMLElement | null,
+  emptyText: string
+) {
   if (!listEl) return;
   listEl.querySelectorAll<HTMLElement>("[data-feed-placeholder]").forEach((node) => node.remove());
 
@@ -320,7 +199,11 @@ function buildFeedItems(entries: Array<{ square: number; row: number; col: numbe
 }
 
 function getLatestSquares(extra: SquareExtraEntry[], type: "minted" | "personalized", limit = 5) {
-  const comparator = type === "minted" ? (entry: SquareExtraEntry) => entry?.[0] ?? 0 : (entry: SquareExtraEntry) => entry?.[1] ?? 0;
+  const comparator =
+    type === "minted"
+      ? (entry: SquareExtraEntry) => entry?.[0] ?? 0
+      : (entry: SquareExtraEntry) => entry?.[1] ?? 0;
+
   return extra
     .map((entry, index) => {
       if (!entry) return null;
@@ -337,7 +220,18 @@ function getLatestSquares(extra: SquareExtraEntry[], type: "minted" | "personali
         sortKey: comparator(entry),
       };
     })
-    .filter((entry): entry is { square: number; row: number; col: number; mintedBlock: number; updatedBlock: number; sortKey: number } => Boolean(entry))
+    .filter(
+      (
+        entry
+      ): entry is {
+        square: number;
+        row: number;
+        col: number;
+        mintedBlock: number;
+        updatedBlock: number;
+        sortKey: number;
+      } => Boolean(entry)
+    )
     .sort((a, b) => b.sortKey - a.sortKey)
     .slice(0, limit);
 }
@@ -347,10 +241,16 @@ export const MainMap: Story = {
   play: async () => {
     const root = document.getElementById(MAP_ROOT_ID);
     if (!root) return;
+
     const statusEl = root.querySelector<HTMLElement>("[data-map-status]");
     try {
       const data = await loadSquareData();
-      initMapInteractions(root, data);
+      const billboard = ensureHomepageBillboard(root);
+      if (!billboard) {
+        throw new Error("Failed to initialize homepage billboard story");
+      }
+
+      await billboard.setData(data.personalizations, data.extra);
       if (statusEl) {
         statusEl.textContent = "Hover or tap to inspect squares.";
       }
@@ -359,7 +259,7 @@ export const MainMap: Story = {
         statusEl.textContent = "Unable to load board data.";
       }
       // eslint-disable-next-line no-console
-      console.error("Storybook map init failed", error);
+      console.error("Storybook homepage map init failed", error);
     }
   },
 };

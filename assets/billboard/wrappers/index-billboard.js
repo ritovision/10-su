@@ -337,7 +337,7 @@ export function initHomepageBillboard(options) {
     },
   });
 
-  scheduleBillboardRuntimeFallback({
+  const cleanupRuntimeFallback = scheduleBillboardRuntimeFallback({
     onChange: () => {
       if (image) {
         image.src = assetPath("wholeSquare.webp");
@@ -502,5 +502,13 @@ export function initHomepageBillboard(options) {
     panZoom: billboard.panZoom,
     grid: billboard.elements.grid,
     cells: billboard.elements.cells,
+    destroy() {
+      document.removeEventListener("keydown", handleDocumentKeydown);
+      if (linkAnchor) {
+        linkAnchor.removeEventListener("click", handleLinkClick);
+      }
+      cleanupRuntimeFallback();
+      billboard.destroy();
+    },
   };
 }
