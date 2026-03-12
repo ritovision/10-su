@@ -20,7 +20,6 @@ import { scheduleBillboardRuntimeFallback } from "../runtime-fallback.js";
  * @param {HTMLElement} options.tooltipDiv - The tooltip element (already in DOM)
  * @param {HTMLElement} options.fenceContainer - Container for electric fence elements
  * @param {HTMLAnchorElement} options.linkAnchor - The #wheretogo anchor
- * @param {HTMLButtonElement} [options.resetButton] - Optional reset zoom button
  * @param {string} options.baseurl - Site base URL
  * @param {Function} [options.normalizeHref] - URL normalization function
  * @returns {Object} Controller with methods
@@ -33,7 +32,6 @@ export function initHomepageBillboard(options) {
     tooltipDiv,
     fenceContainer,
     linkAnchor,
-    resetButton,
     baseurl = "",
     normalizeHref = normalizeHrefSafe,
   } = options;
@@ -62,6 +60,11 @@ export function initHomepageBillboard(options) {
   if (linkAnchor) {
     linkAnchor.removeAttribute("href");
   }
+
+  const mobileUiMount =
+    mapWrapper.closest(".map-shell") ||
+    mapWrapper.parentElement ||
+    mapWrapper;
 
   /**
    * Build UI model for a square (used for tooltip text + link behavior + cursor),
@@ -142,8 +145,9 @@ export function initHomepageBillboard(options) {
     enablePanZoom: true,
     enableCoreBlocklists: true,
     allowBlockedSelection: true,
-    onZoomChange: (isZoomed) => {
-      if (resetButton) resetButton.classList.toggle("is-visible", isZoomed);
+    mobilePanZoomUi: {
+      hintText: "Pinch to zoom, drag to pan, double tap Squares to activate",
+      uiMount: mobileUiMount,
     },
 
     // Use homepage grid classes
@@ -343,11 +347,6 @@ export function initHomepageBillboard(options) {
 
   // Touch UX is handled in billboard-core-events.js:
   // first tap previews (tooltip), second tap activates.
-
-  // Wire up reset button to core billboard reset
-  if (resetButton) {
-    resetButton.addEventListener("click", () => billboard.reset());
-  }
 
   // Leaving modal integration with unified URI gating
   function handleLinkClick(event) {

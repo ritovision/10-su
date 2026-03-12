@@ -25,6 +25,10 @@ import {
 import { createSquareOverrideManager } from "./square-override.js";
 import { attachBillboardEvents } from "./billboard-core-events.js";
 import {
+  attachMobilePanZoomUi,
+  DEFAULT_BILLBOARD_TOUCH_HINT,
+} from "./billboard-mobile-ui.js";
+import {
   loadCoreBlocklistsOnce,
   applyCoreSquareBlocklistOverrides,
   isCoreSquareBlocked,
@@ -110,6 +114,7 @@ export function createBillboard(container, options = {}) {
     onSquareActivate,
     onClearSelection,
     onZoomChange,
+    mobilePanZoomUi,
 
     filter = () => true,
     getPersonalization = () => null,
@@ -238,13 +243,53 @@ export function createBillboard(container, options = {}) {
 
   // Pan-zoom
   let panZoom = null;
+  let mobilePanZoomController = null;
+  const mobilePanZoomUiEnabled =
+    enablePanZoom &&
+    mobilePanZoomUi !== false &&
+    isTouchDevice();
+  const mobilePanZoomUiConfig =
+    mobilePanZoomUi && typeof mobilePanZoomUi === "object" ? mobilePanZoomUi : {};
+
   if (enablePanZoom) {
-    panZoom = createPanZoom(wrapper, { onZoomChange });
+    panZoom = createPanZoom(wrapper, {
+      onZoomChange: (isZoomed) => {
+        if (mobilePanZoomController) {
+          mobilePanZoomController.onZoomChange(isZoomed);
+        }
+        if (onZoomChange) {
+          onZoomChange(isZoomed);
+        }
+      },
+    });
   }
 
   // Mount wrapper if we created it
   if (!wrapperProvided) {
     container.appendChild(wrapper);
+  }
+
+  if (mobilePanZoomUiEnabled && panZoom && panZoom.isActive) {
+    const defaultUiMount =
+      container !== wrapper
+        ? container
+        : wrapper.parentElement || container;
+    const uiMount =
+      mobilePanZoomUiConfig.uiMount || defaultUiMount;
+
+    mobilePanZoomController = attachMobilePanZoomUi({
+      wrapper,
+      uiMount,
+      onReset: () => {
+        if (panZoom) {
+          panZoom.reset();
+        }
+      },
+      hintText: mobilePanZoomUiConfig.hintText || DEFAULT_BILLBOARD_TOUCH_HINT,
+      resetText: mobilePanZoomUiConfig.resetText,
+      hintColor: mobilePanZoomUiConfig.hintColor,
+      resetColor: mobilePanZoomUiConfig.resetColor,
+    });
   }
 
   // Start loading blocklists immediately
@@ -555,10 +600,16 @@ export function createBillboard(container, options = {}) {
 
   function reset() {
     if (panZoom) panZoom.reset();
+    if (mobilePanZoomController) {
+      mobilePanZoomController.restore();
+    }
   }
 
   function destroy() {
     events.destroy();
+    if (mobilePanZoomController) {
+      mobilePanZoomController.destroy();
+    }
     if (panZoom) panZoom.destroy();
   }
 
@@ -580,6 +631,7 @@ export function createBillboard(container, options = {}) {
       tooltip,
     },
     panZoom,
+    mobilePanZoomUi: mobilePanZoomController,
     gridState,
     overrideManager,
   };

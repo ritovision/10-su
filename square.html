@@ -73,8 +73,6 @@ image: "{{ site.baseurl }}/assets/images/su-OG.png"
             <img id="arrow" class="square-location__arrow" src="{{ site.baseurl }}/assets/images/dr.png" alt="Location">
           </div>
         </div>
-        <p class="square-location__mobile-hint">Pinch to zoom, drag to pan.</p>
-        <button type="button" class="square-location__reset-btn" id="location-reset-btn">Reset zoom</button>
       </div>
 
       <h2>Emojified</h2>
@@ -269,7 +267,6 @@ image: "{{ site.baseurl }}/assets/images/su-OG.png"
           canvas: document.querySelector('.square-location__canvas'),
           image: mapImage,
           arrow: document.getElementById('arrow'),
-          resetButton: document.getElementById('location-reset-btn'),
           squareNumber,
           arrowBasePath: 'assets/images',
         });

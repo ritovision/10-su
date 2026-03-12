@@ -149,12 +149,6 @@
   flex-wrap: wrap;
 }
 
-
-.personalize-modern-page .personalize-billboard__reset,
-.personalize-modern-page .personalize-billboard__hint {
-  align-self: center;
-}
-
 .personalize-modern-page .personalize-billboard__controls-left,
 .personalize-modern-page .personalize-billboard__controls-center,
 .personalize-modern-page .personalize-billboard__controls-right {
@@ -615,19 +609,11 @@
   .personalize-modern-page .personalize-billboard__controls {
     order: 1;
   }
-  .personalize-modern-page .personalize-billboard__hint {
-    order: 2;
-    margin-top: 0.2rem;
-  }
   .personalize-modern-page .personalize-billboard__view {
-    order: 3;
-  }
-  .personalize-modern-page .personalize-billboard__reset {
-    order: 4;
-    margin: 0.4rem auto 0;
+    order: 2;
   }
   .personalize-modern-page .personalize-billboard__mode-row {
-    order: 5;
+    order: 3;
     margin-top: 0;
   }
   .personalize-modern-page .personalize-billboard__controls {

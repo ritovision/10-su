@@ -4,6 +4,7 @@
  */
 
 import { createPanZoom } from "../../js/pan-zoom.js";
+import { attachMobilePanZoomUi } from "../billboard-mobile-ui.js";
 import { squareToCoords, getQuadrant } from "../billboard-utils.js";
 import { SquareBlocklist } from "../blocklist/blocklist-squares.js";
 
@@ -13,7 +14,6 @@ import { SquareBlocklist } from "../blocklist/blocklist-squares.js";
  * @param {HTMLElement} options.canvas - The .square-location__canvas element
  * @param {HTMLImageElement} options.image - The billboard image element
  * @param {HTMLImageElement} options.arrow - The arrow indicator element
- * @param {HTMLButtonElement} [options.resetButton] - Optional reset zoom button
  * @param {number} options.squareNumber - The square to highlight
  * @param {string} [options.arrowBasePath="assets/images"] - Path to arrow images
  * @returns {Object} Controller with methods
@@ -23,7 +23,6 @@ export function initSquareLocation(options) {
     canvas,
     image,
     arrow,
-    resetButton,
     squareNumber,
     arrowBasePath = "assets/images",
   } = options;
@@ -37,11 +36,16 @@ export function initSquareLocation(options) {
   let blockedOverlaysRendered = false;
 
   // Initialize pan-zoom
-  const panZoom = createPanZoom(canvas, {
-    onZoomChange: (isZoomed) => {
-      if (resetButton) resetButton.classList.toggle("is-visible", isZoomed);
-    },
-  });
+  const panZoom = createPanZoom(canvas);
+  const mobilePanZoomUi =
+    panZoom && panZoom.isActive
+      ? attachMobilePanZoomUi({
+          wrapper: canvas,
+          uiMount: canvas.parentElement || canvas,
+          onReset: () => panZoom.reset(),
+          hintText: "Pinch to zoom and drag to pan",
+        })
+      : null;
 
   /**
    * Render blocked square overlays
@@ -74,11 +78,6 @@ export function initSquareLocation(options) {
 
   // Load and render blocked overlays
   renderBlockedOverlays();
-
-  // Wire reset button if touch device
-  if (panZoom && panZoom.isActive && resetButton) {
-    resetButton.addEventListener("click", () => panZoom.reset());
-  }
 
   /**
    * Update arrow position based on square and container size
@@ -161,6 +160,9 @@ export function initSquareLocation(options) {
 
     destroy() {
       window.removeEventListener("resize", updateArrowPosition);
+      if (mobilePanZoomUi) {
+        mobilePanZoomUi.destroy();
+      }
       if (panZoom) {
         panZoom.destroy();
       }

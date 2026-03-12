@@ -6,7 +6,6 @@
 import { loadSquareData } from "../../js/square-data.js";
 import { assetPath } from "../../js/asset-base.js";
 import { createBillboard } from "../billboard-core.js";
-import { createResetButton, createMobileHint } from "../billboard-view.js";
 import { isTouchDevice } from "../billboard-utils.js";
 import { scheduleBillboardRuntimeFallback } from "../runtime-fallback.js";
 
@@ -198,22 +197,19 @@ export function attachBillboardChooser({
     headerRow.appendChild(heading);
     headerRow.appendChild(closeButton);
 
-    // Mobile hint (uses chooser styling, not billboard)
-    const mobileHint = createMobileHint("Pinch to zoom, drag to pan, double tap.", "su-chooser__mobile-hint");
-
     // Billboard container
     const billboardContainer = document.createElement("div");
     billboardContainer.className = "billboard";
 
     // Create billboard
-    let resetBtnRef = null;
     billboard = createBillboard(billboardContainer, {
       mode: "interactive",
       enableGrid: true,
       enableKeyboard: true,
       allowBlockedSelection: true,
-      onZoomChange: (isZoomed) => {
-        if (resetBtnRef) resetBtnRef.classList.toggle("is-visible", isZoomed);
+      mobilePanZoomUi: {
+        hintText: "Pinch to zoom, drag to pan, double tap Squares to select",
+        uiMount: billboardContainer,
       },
       imageSrc: assetPath("wholeSquare.webp"),
       imageAlt: "All Su Squares",
@@ -256,25 +252,9 @@ export function attachBillboardChooser({
       },
     });
 
-    // Reset button (touch devices only)
-    let resetBtn = null;
-    if (isTouchDevice()) {
-      resetBtn = createResetButton({
-        text: "Reset zoom",
-        onClick: () => billboard.reset(),
-      });
-      // Force display since we're in modal context
-      resetBtn.style.display = "block";
-      resetBtnRef = resetBtn;
-    }
-
     // Assemble modal
     modal.appendChild(headerRow);
-    modal.appendChild(mobileHint);
     modal.appendChild(billboardContainer);
-    if (resetBtn) {
-      modal.appendChild(resetBtn);
-    }
     backdrop.appendChild(modal);
     document.body.appendChild(backdrop);
   }

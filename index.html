@@ -39,7 +39,6 @@ image: "{{ site.baseurl }}/assets/images/su-OG.png"
       Clicking an already minted and personalized
       one will activate its hyperlink.</p>
       <h2 class="billboard-heading">Su Squares Billboard</h2>
-    <p class="mobile-hint">Pinch to zoom, drag to pan, double tap.</p>
     <script>
       // Only update if there's a pricing override to avoid performance tax
       // Uses DOMContentLoaded because runtime.generated.js is deferred
@@ -52,20 +51,21 @@ image: "{{ site.baseurl }}/assets/images/su-OG.png"
         }
       });
     </script>
-    <a id="wheretogo" class="map-container" href="#" target="_blank">
-      <div class="map-wrapper">
-        <img
-          id="theImage"
-          class="map-image"
-          src="{{ site.baseurl }}/build/wholeSquare.webp"
-          alt="All Su Squares"
-        >
-        <div id="position" class="map-position"></div>
-        <div id="tooltip" class="map-tooltip"></div>
-        <div id="electric-fence" class="map-fence"></div>
-      </div>
-    </a>
-    <button id="map-reset-btn" class="map-reset-btn" type="button">Reset zoom</button>
+    <div class="map-shell">
+      <a id="wheretogo" class="map-container" href="#" target="_blank">
+        <div class="map-wrapper">
+          <img
+            id="theImage"
+            class="map-image"
+            src="{{ site.baseurl }}/build/wholeSquare.webp"
+            alt="All Su Squares"
+          >
+          <div id="position" class="map-position"></div>
+          <div id="tooltip" class="map-tooltip"></div>
+          <div id="electric-fence" class="map-fence"></div>
+        </div>
+      </a>
+    </div>
   </article>
 
   <article class="newly-feed">
@@ -212,7 +212,6 @@ image: "{{ site.baseurl }}/assets/images/su-OG.png"
           tooltipDiv: document.getElementById("tooltip"),
           fenceContainer: document.getElementById("electric-fence"),
           linkAnchor: document.getElementById("wheretogo"),
-          resetButton: document.getElementById("map-reset-btn"),
           baseurl,
           normalizeHref,
         });

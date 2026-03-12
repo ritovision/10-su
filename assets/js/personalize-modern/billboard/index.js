@@ -66,7 +66,6 @@ export function initPersonalizeBillboardUi({
   const cancelButton = document.getElementById("billboard-cancel");
   const resetAllButton = document.getElementById("billboard-reset-all");
   const uploadButton = document.getElementById("billboard-upload");
-  const resetButton = document.getElementById("personalize-billboard-reset");
   const locatorHideButton = document.getElementById("billboard-locator-hide");
   const placementControls = document.getElementById("personalize-placement-controls");
   const placementInput = document.getElementById("placement-image-input");
@@ -115,9 +114,6 @@ export function initPersonalizeBillboardUi({
   const controller = initPersonalizeBillboard({
     container: mount,
     baseurl: window.SITE_BASEURL || "",
-    onZoomChange: (isZoomed) => {
-      if (resetButton) resetButton.classList.toggle("is-visible", isZoomed);
-    },
     onSquareActivate: (squareNumber) => {
       if (!isValidSquareId(squareNumber) || placementActive) return;
       if (!isEditing) {
@@ -708,10 +704,6 @@ export function initPersonalizeBillboardUi({
 
   if (cancelButton) {
     cancelButton.addEventListener("click", cancelEditMode);
-  }
-
-  if (resetButton) {
-    resetButton.addEventListener("click", () => controller.billboard.reset());
   }
 
   if (resetAllButton) {

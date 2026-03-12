@@ -68,6 +68,10 @@ export function initPersonalizeBillboard(options) {
     enableKeyboard: true,
     enablePanZoom: true,
     onZoomChange,
+    mobilePanZoomUi: {
+      hintText: "Pinch to zoom, drag to pan, double tap Squares to select",
+      uiMount: container.parentElement || container,
+    },
     enableCoreBlocklists: false,
     allowBlockedSelection: true,
     imageSrc: assetPath("wholeSquare.webp"),

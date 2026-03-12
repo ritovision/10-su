@@ -10,11 +10,16 @@
   text-align: center;
 }
 
-.map-container {
+.map-shell {
+  position: relative;
   width: 100%;
   max-width: 1000px;
-  display: block;
   margin: 0 auto;
+}
+
+.map-container {
+  width: 100%;
+  display: block;
   overflow: hidden; /* Clip zoomed content */
 }
 
@@ -226,39 +231,6 @@
   }
 }
 
-/* Mobile hint text and reset button - only visible on small screens */
-.mobile-hint {
-  font-weight: bold;
-  text-align: center;
-  margin: 10px auto 0 auto;
-  padding: 0;
-  display: none;
-}
-
-.map-reset-btn {
-  display: none;
-  margin: 10px auto 0 auto;
-  padding: 0.4rem 1rem;
-  background: rgba(0, 0, 0, 0.25);
-  border: 2px solid var(--color-accent);
-  border-radius: var(--radius-sm);
-  color: var(--color-accent);
-  cursor: pointer;
-  font-size: 0.9rem;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 1s ease;
-}
-
-.map-reset-btn.is-visible {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-.map-reset-btn:hover {
-  background: rgba(0, 0, 0, 0.4);
-}
-
 /* Override article gaps from main.css for homepage */
 article {
   gap: 0;
@@ -271,14 +243,6 @@ article {
 }
 
 @media (max-width: 700px) {
-  .mobile-hint {
-    display: block; /* Show on mobile */
-  }
-
-  .map-reset-btn {
-    display: block; /* Show on mobile */
-  }
-
   .map-container {
     margin-top: 0.5rem;
   }
