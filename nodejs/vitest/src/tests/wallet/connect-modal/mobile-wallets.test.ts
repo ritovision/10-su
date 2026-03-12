@@ -1,9 +1,12 @@
 import {
   buildMobileWalletLaunchUrl,
+  clearActiveMobileWallet,
   clearStoredMobileWallet,
   normalizeExplorerWallets,
+  readActiveMobileWallet,
   readStoredMobileWallet,
   resolveStoredMobileWallet,
+  writeActiveMobileWallet,
   writeStoredMobileWallet,
 } from '@web3/wallet/connect-modal/mobile-wallets.js';
 
@@ -146,5 +149,38 @@ describe('connect-modal/mobile-wallets.js', () => {
     expect(localStorage.getItem('su.wallet.mobileWallet.lastUsed')).toBeNull();
 
     clearStoredMobileWallet();
+  });
+
+  it('stores the active launcher wallet separately from the chooser memory', () => {
+    writeStoredMobileWallet({
+      id: 'metamask',
+      name: 'MetaMask',
+      iconUrl: '',
+      nativeLink: 'metamask://',
+      universalLink: 'https://metamask.app.link',
+    });
+    writeActiveMobileWallet({
+      id: 'rainbow',
+      name: 'Rainbow',
+      iconUrl: '',
+      nativeLink: 'rainbow://',
+      universalLink: 'https://rnbwapp.com',
+    });
+
+    expect(readStoredMobileWallet()).toEqual(expect.objectContaining({
+      id: 'metamask',
+      name: 'MetaMask',
+    }));
+    expect(readActiveMobileWallet()).toEqual(expect.objectContaining({
+      id: 'rainbow',
+      name: 'Rainbow',
+    }));
+
+    clearActiveMobileWallet();
+    expect(readActiveMobileWallet()).toBeNull();
+    expect(readStoredMobileWallet()).toEqual(expect.objectContaining({
+      id: 'metamask',
+      name: 'MetaMask',
+    }));
   });
 });

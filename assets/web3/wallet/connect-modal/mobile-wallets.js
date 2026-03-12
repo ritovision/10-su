@@ -1,4 +1,5 @@
 const MOBILE_WALLET_STORAGE_KEY = "su.wallet.mobileWallet.lastUsed";
+const ACTIVE_MOBILE_WALLET_STORAGE_KEY = "su.wallet.mobileWallet.activeSession";
 
 /**
  * @typedef {{
@@ -132,29 +133,29 @@ function isStoredWalletShape(value) {
   );
 }
 
-/**
- * Read the stored chooser wallet. Malformed values are ignored and cleared.
- * @returns {MobileWalletOption | null}
- */
-export function readStoredMobileWallet() {
+function normalizeStoredWallet(value) {
+  return {
+    id: safeTrim(value.id),
+    name: safeTrim(value.name) || "Wallet",
+    iconUrl: safeTrim(value.iconUrl),
+    nativeLink: safeTrim(value.nativeLink),
+    universalLink: safeTrim(value.universalLink),
+  };
+}
+
+function readWalletFromStorage(storageKey) {
   try {
-    const raw = localStorage.getItem(MOBILE_WALLET_STORAGE_KEY);
+    const raw = localStorage.getItem(storageKey);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     if (!isStoredWalletShape(parsed)) {
-      localStorage.removeItem(MOBILE_WALLET_STORAGE_KEY);
+      localStorage.removeItem(storageKey);
       return null;
     }
-    return {
-      id: safeTrim(parsed.id),
-      name: safeTrim(parsed.name) || "Wallet",
-      iconUrl: safeTrim(parsed.iconUrl),
-      nativeLink: safeTrim(parsed.nativeLink),
-      universalLink: safeTrim(parsed.universalLink),
-    };
+    return normalizeStoredWallet(parsed);
   } catch (_error) {
     try {
-      localStorage.removeItem(MOBILE_WALLET_STORAGE_KEY);
+      localStorage.removeItem(storageKey);
     } catch (_innerError) {
       /* ignore storage errors */
     }
@@ -162,32 +163,61 @@ export function readStoredMobileWallet() {
   }
 }
 
-/**
- * Persist the last chooser-selected wallet. WalletConnect URIs are never stored.
- * @param {MobileWalletOption | null | undefined} wallet
- */
-export function writeStoredMobileWallet(wallet) {
+function writeWalletToStorage(storageKey, wallet) {
   if (!wallet) return;
-  const value = {
-    id: safeTrim(wallet.id),
-    name: safeTrim(wallet.name),
-    iconUrl: safeTrim(wallet.iconUrl),
-    nativeLink: safeTrim(wallet.nativeLink),
-    universalLink: safeTrim(wallet.universalLink),
-  };
   try {
-    localStorage.setItem(MOBILE_WALLET_STORAGE_KEY, JSON.stringify(value));
+    localStorage.setItem(storageKey, JSON.stringify(normalizeStoredWallet(wallet)));
   } catch (_error) {
     /* ignore storage errors */
   }
 }
 
-export function clearStoredMobileWallet() {
+function clearWalletFromStorage(storageKey) {
   try {
-    localStorage.removeItem(MOBILE_WALLET_STORAGE_KEY);
+    localStorage.removeItem(storageKey);
   } catch (_error) {
     /* ignore storage errors */
   }
+}
+
+/**
+ * Read the stored chooser wallet. Malformed values are ignored and cleared.
+ * @returns {MobileWalletOption | null}
+ */
+export function readStoredMobileWallet() {
+  return readWalletFromStorage(MOBILE_WALLET_STORAGE_KEY);
+}
+
+/**
+ * Persist the last chooser-selected wallet. WalletConnect URIs are never stored.
+ * @param {MobileWalletOption | null | undefined} wallet
+ */
+export function writeStoredMobileWallet(wallet) {
+  writeWalletToStorage(MOBILE_WALLET_STORAGE_KEY, wallet);
+}
+
+export function clearStoredMobileWallet() {
+  clearWalletFromStorage(MOBILE_WALLET_STORAGE_KEY);
+}
+
+/**
+ * Read the chooser-scoped launcher wallet for the current WalletConnect session.
+ * @returns {MobileWalletOption | null}
+ */
+export function readActiveMobileWallet() {
+  return readWalletFromStorage(ACTIVE_MOBILE_WALLET_STORAGE_KEY);
+}
+
+/**
+ * Persist the launcher wallet for the currently active WalletConnect session.
+ * @param {MobileWalletOption | null | undefined} wallet
+ */
+export function writeActiveMobileWallet(wallet) {
+  writeWalletToStorage(ACTIVE_MOBILE_WALLET_STORAGE_KEY, wallet);
+}
+
+export function clearActiveMobileWallet() {
+  clearWalletFromStorage(ACTIVE_MOBILE_WALLET_STORAGE_KEY);
 }
 
 /**

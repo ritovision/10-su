@@ -13,9 +13,11 @@ import { getWeb3Config } from "../../config/index.js";
 import { createDebugLogger } from "../../config/logger.js";
 import {
   buildMobileWalletLaunchUrl,
+  clearActiveMobileWallet,
   clearStoredMobileWallet,
   normalizeExplorerWallets,
   resolveStoredMobileWallet,
+  writeActiveMobileWallet,
   writeStoredMobileWallet,
 } from "./mobile-wallets.js";
 
@@ -385,6 +387,12 @@ export function createConnectController(shell) {
       // Network switching is handled automatically by wallets during transactions
       const account = wagmi.getAccount();
       if (account?.isConnected) {
+        const connectedConnectorId = account.connector?.id || connector.id;
+        if (connectedConnectorId === "walletConnect" && walletConnectFlow === "chooser" && selectedMobileWallet) {
+          writeActiveMobileWallet(selectedMobileWallet);
+        } else {
+          clearActiveMobileWallet();
+        }
         log("Connected successfully", {
           address: account.address,
           connector: account.connector?.id,

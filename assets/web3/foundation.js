@@ -2,6 +2,7 @@ import { getWeb3Config } from "./config/index.js";
 import { createDebugLogger } from "./config/logger.js";
 import { loadWagmiClient } from "./client/wagmi.js";
 import { openConnectModal } from "./wallet/connect-modal/index.js";
+import { clearActiveMobileWallet } from "./wallet/connect-modal/mobile-wallets.js";
 import { isAllowedChain, getCurrentChainId } from "./wallet/network.js";
 import { clearAllEnsCache } from "./wallet/ens-store.js";
 import { activateWalletContext } from "./wallet/active-wallet-context.js";
@@ -63,6 +64,11 @@ export function clearAllWalletStorage() {
   }
   try {
     removeWalletConnectKeys({ onlyEmpty: false });
+  } catch (_error) {
+    /* ignore */
+  }
+  try {
+    clearActiveMobileWallet();
   } catch (_error) {
     /* ignore */
   }

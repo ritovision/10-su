@@ -5,6 +5,32 @@
  */
 import { clearWeb3Config, resetConfigModule, mockSiteBaseUrl, clearSiteBaseUrl } from '@test-helpers/config';
 
+const {
+  mockIsMobileDevice,
+  mockOpenWalletChooser,
+  mockOpenWalletDeepLink,
+  mockBuildMobileWalletLaunchUrl,
+  mockReadActiveMobileWallet,
+} = vi.hoisted(() => ({
+  mockIsMobileDevice: vi.fn(() => false),
+  mockOpenWalletChooser: vi.fn(() => false),
+  mockOpenWalletDeepLink: vi.fn(() => false),
+  mockBuildMobileWalletLaunchUrl: vi.fn(() => ''),
+  mockReadActiveMobileWallet: vi.fn(() => null),
+}));
+
+vi.mock('@web3/wallet/wc-constants.js', () => ({
+  PLACEHOLDER_WC_URI: 'wc:susquares@2',
+  isMobileDevice: () => mockIsMobileDevice(),
+  openWalletChooser: () => mockOpenWalletChooser(),
+  openWalletDeepLink: (uri: string) => mockOpenWalletDeepLink(uri),
+}));
+
+vi.mock('@web3/wallet/connect-modal/mobile-wallets.js', () => ({
+  buildMobileWalletLaunchUrl: (...args: unknown[]) => mockBuildMobileWalletLaunchUrl(...args),
+  readActiveMobileWallet: () => mockReadActiveMobileWallet(),
+}));
+
 describe('account-modal/account-view.js', () => {
   let renderAccountView: any;
 
@@ -20,6 +46,14 @@ describe('account-modal/account-view.js', () => {
     });
 
     await resetConfigModule();
+
+    mockIsMobileDevice.mockReturnValue(false);
+    mockOpenWalletChooser.mockReset();
+    mockOpenWalletDeepLink.mockReset();
+    mockBuildMobileWalletLaunchUrl.mockReset();
+    mockBuildMobileWalletLaunchUrl.mockReturnValue('');
+    mockReadActiveMobileWallet.mockReset();
+    mockReadActiveMobileWallet.mockReturnValue(null);
 
     const module = await import('@web3/wallet/account-modal/account-view.js');
     renderAccountView = module.renderAccountView;
@@ -300,6 +334,83 @@ describe('account-modal/account-view.js', () => {
 
       const openWalletBtn = target.querySelector('[data-open-wallet]');
       expect(openWalletBtn).toBeFalsy();
+    });
+
+    it('shows a remembered wallet label for chooser-based WalletConnect sessions', () => {
+      mockIsMobileDevice.mockReturnValue(true);
+      mockReadActiveMobileWallet.mockReturnValue({
+        id: 'rainbow',
+        name: 'Rainbow',
+        iconUrl: '',
+        nativeLink: 'rainbow://',
+        universalLink: 'https://rnbwapp.com',
+      });
+
+      const target = createMockTarget();
+      const data = createMockData({
+        account: {
+          address: '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045',
+          connector: { id: 'walletConnect' },
+        },
+      });
+      const options = createMockOptions();
+
+      renderAccountView(target, data, options);
+
+      const openWalletBtn = target.querySelector('[data-open-wallet]');
+      expect(openWalletBtn?.textContent).toContain('Open Rainbow');
+    });
+
+    it('uses the remembered launcher wallet for post-connect reopen actions', () => {
+      mockIsMobileDevice.mockReturnValue(true);
+      const rememberedWallet = {
+        id: 'rainbow',
+        name: 'Rainbow',
+        iconUrl: '',
+        nativeLink: 'rainbow://',
+        universalLink: 'https://rnbwapp.com',
+      };
+      mockReadActiveMobileWallet.mockReturnValue(rememberedWallet);
+      mockBuildMobileWalletLaunchUrl.mockReturnValue('rainbow://wc?uri=wc%3Asusquares%402');
+
+      const target = createMockTarget();
+      const data = createMockData({
+        account: {
+          address: '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045',
+          connector: { id: 'walletConnect' },
+        },
+      });
+      const options = createMockOptions();
+
+      renderAccountView(target, data, options);
+
+      const openWalletBtn = target.querySelector('[data-open-wallet]') as HTMLButtonElement;
+      openWalletBtn.click();
+
+      expect(mockBuildMobileWalletLaunchUrl).toHaveBeenCalledWith(rememberedWallet, 'wc:susquares@2');
+      expect(mockOpenWalletDeepLink).toHaveBeenCalledWith('rainbow://wc?uri=wc%3Asusquares%402');
+      expect(mockOpenWalletChooser).not.toHaveBeenCalled();
+    });
+
+    it('falls back to the generic chooser when no remembered launcher is available', () => {
+      mockIsMobileDevice.mockReturnValue(true);
+
+      const target = createMockTarget();
+      const data = createMockData({
+        account: {
+          address: '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045',
+          connector: { id: 'walletConnect' },
+        },
+      });
+      const options = createMockOptions();
+
+      renderAccountView(target, data, options);
+
+      const openWalletBtn = target.querySelector('[data-open-wallet]') as HTMLButtonElement;
+      openWalletBtn.click();
+
+      expect(mockOpenWalletChooser).toHaveBeenCalledTimes(1);
+      expect(mockOpenWalletDeepLink).not.toHaveBeenCalled();
     });
 
     it('should not show "Open mobile wallet" button for injected provider', () => {

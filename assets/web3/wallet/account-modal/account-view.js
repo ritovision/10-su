@@ -1,4 +1,4 @@
-import { isMobileDevice, openWalletChooser } from "../wc-constants.js";
+import { PLACEHOLDER_WC_URI, isMobileDevice, openWalletChooser, openWalletDeepLink } from "../wc-constants.js";
 import { truncateAddress } from "../../client/wagmi.js";
 import {
   getRefreshButtonHTML,
@@ -6,6 +6,7 @@ import {
   attachRefreshHandler,
 } from "../balance-refresh-button.js";
 import { formatBalanceForDisplay } from "../../services/format-balance.js";
+import { buildMobileWalletLaunchUrl, readActiveMobileWallet } from "../connect-modal/mobile-wallets.js";
 
 function getChainIcon(activeNetwork, presets) {
   const baseurl = window.SITE_BASEURL || '';
@@ -70,6 +71,10 @@ export function renderAccountView(target, data, options) {
   // Show "Open mobile wallet" button on mobile when connected via WalletConnect
   const isWalletConnect = account?.connector?.id === "walletConnect";
   const showOpenWalletButton = isMobileDevice() && isWalletConnect;
+  const activeMobileWallet = showOpenWalletButton ? readActiveMobileWallet() : null;
+  const openWalletLabel = activeMobileWallet?.name
+    ? `Open ${activeMobileWallet.name}`
+    : "Open mobile wallet";
 
   const primaryFallback = account?.address ? truncateAddress(account.address) : "Not connected";
   const addressDisplay = ensName || (ensLoading ? "Fetching ENS..." : primaryFallback);
@@ -110,7 +115,7 @@ export function renderAccountView(target, data, options) {
     </div>
     <div class="wallet-actions" style="margin-top: 1rem;">
       ${showOpenWalletButton
-      ? `<button class="wallet-btn" type="button" data-open-wallet>Open mobile wallet</button>`
+      ? `<button class="wallet-btn" type="button" data-open-wallet>${escapeHtml(openWalletLabel)}</button>`
       : ""
     }
       <button class="wallet-btn wallet-btn--ghost" type="button" data-disconnect data-testid="disconnect-wallet-button">
@@ -155,7 +160,13 @@ export function renderAccountView(target, data, options) {
   });
 
   target.querySelector("[data-open-wallet]")?.addEventListener("click", () => {
-    // Opens OS app chooser with placeholder URI (no real session data)
+    const launcherUrl = activeMobileWallet
+      ? buildMobileWalletLaunchUrl(activeMobileWallet, PLACEHOLDER_WC_URI)
+      : "";
+    if (launcherUrl) {
+      openWalletDeepLink(launcherUrl);
+      return;
+    }
     openWalletChooser();
   });
 
