@@ -391,7 +391,7 @@ export function initEmbedBillboard(options) {
 
       // Use unified gateLinkNavigation if available (handles all URI types)
       if (modal && typeof modal.gateLinkNavigation === "function") {
-        const handled = modal.gateLinkNavigation(ui.destinationHref, event, "_blank");
+        const handled = modal.gateLinkNavigation(ui.destinationHref, event, "_blank", { squareNumber });
         if (handled) return;
         // If not handled, navigate directly
         window.open(ui.destinationHref, "_blank", "noopener");

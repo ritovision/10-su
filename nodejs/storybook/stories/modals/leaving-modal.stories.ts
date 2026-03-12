@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/html";
-import "@modals/leaving-modal/leaving-modal.js";
+import "@modals/leaving-modal/modal-core.js";
 import "@modals/leaving-modal/link-guard.js";
 
 interface LeavingModalArgs {}
@@ -10,11 +10,12 @@ declare global {
   interface Window {
     SuLeavingModal?: {
       init: () => Promise<unknown>;
-      show: (targetUrl: URL, target?: string) => void;
+      show: (targetUrl: URL | string, target?: string, options?: { variant?: string; squareNumber?: number }) => void;
       hide: () => void;
       shouldWarnForUrl: (url: URL) => boolean;
       gateAnchor: (anchor: HTMLAnchorElement) => void;
-      loadAllowlist: () => Promise<unknown>;
+      gateAnchors: (selector: string | NodeListOf<HTMLAnchorElement> | HTMLAnchorElement[]) => void;
+      loadBlocklist: () => Promise<unknown>;
     };
     SuLeavingLinkGuard?: {
       guardLink: (

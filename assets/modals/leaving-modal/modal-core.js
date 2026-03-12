@@ -8,8 +8,8 @@
     standard: {
       title: "You are leaving this site",
       message: "We do NOT vet these links and assume no responsibility if you choose to visit it. Proceed at your own discretion.",
-      cancelText: "Stay Here",
-      confirmText: "Go There",
+      cancelText: "Stay here",
+      confirmText: "Go there",
     },
     deeplink: {
       title: "You are using a deeplink",
@@ -22,14 +22,20 @@
   var TEMPLATE_HTML = '\
     <div class="su-leaving-backdrop" aria-hidden="true">\
       <div class="su-leaving" role="dialog" aria-modal="true" aria-labelledby="su-leaving-title">\
+        <button type="button" class="su-leaving__close" aria-label="Close leaving modal" title="Close">\
+          <span aria-hidden="true">X</span>\
+        </button>\
         <div class="su-leaving__title" id="su-leaving-title">You are leaving this site</div>\
         <p class="su-leaving__message">\
           We do NOT vet these links and assume no responsibility if you choose to visit it. Proceed at your own discretion.\
         </p>\
         <a class="su-leaving__url" href="#" target="_blank" rel="noopener"></a>\
         <div class="su-leaving__actions">\
-          <button type="button" class="su-leaving__button su-leaving__button--stay">Stay Here</button>\
-          <button type="button" class="su-leaving__button su-leaving__button--go">Go There</button>\
+          <button type="button" class="su-leaving__button su-leaving__button--stay">Stay here</button>\
+          <div class="su-leaving__primary-actions">\
+            <button type="button" class="su-leaving__button su-leaving__button--go">Go there</button>\
+            <button type="button" class="su-leaving__button su-leaving__button--more-info" hidden>More info</button>\
+          </div>\
         </div>\
       </div>\
     </div>\
@@ -48,11 +54,38 @@
   var urlNode;
   var stayButton;
   var goButton;
+  var moreInfoButton;
+  var closeButton;
   var lastFocusedElement;
   var readyPromise;
   var pendingUrl;
   var pendingTarget;
+  var pendingSquareNumber;
   var currentVariant = "standard";
+
+  function normalizeSquareNumber(squareNumber) {
+    var parsed = Number(squareNumber);
+    if (!Number.isInteger(parsed) || parsed < 1 || parsed > 10000) {
+      return null;
+    }
+    return parsed;
+  }
+
+  function getSquareInfoUrl(squareNumber) {
+    var normalizedSquareNumber = normalizeSquareNumber(squareNumber);
+    if (!normalizedSquareNumber) {
+      return null;
+    }
+    return baseurl + "/square#" + normalizedSquareNumber;
+  }
+
+  function syncMoreInfoButton() {
+    if (!moreInfoButton) {
+      return;
+    }
+    var infoUrl = getSquareInfoUrl(pendingSquareNumber);
+    moreInfoButton.hidden = !infoUrl;
+  }
 
   function triggerDeeplink(urlString) {
     try {
@@ -108,13 +141,16 @@
     urlNode = backdrop.querySelector(".su-leaving__url");
     stayButton = backdrop.querySelector(".su-leaving__button--stay");
     goButton = backdrop.querySelector(".su-leaving__button--go");
+    moreInfoButton = backdrop.querySelector(".su-leaving__button--more-info");
+    closeButton = backdrop.querySelector(".su-leaving__close");
 
-    if (!urlNode || !stayButton || !goButton) {
+    if (!urlNode || !stayButton || !goButton || !moreInfoButton || !closeButton) {
       console.warn("LeavingModal: missing modal parts, skipping custom modal.");
       backdrop = null;
       return;
     }
 
+    closeButton.addEventListener("click", hide);
     stayButton.addEventListener("click", hide);
     goButton.addEventListener("click", function () {
       if (!pendingUrl) {
@@ -135,6 +171,23 @@
         } else {
           window.open(pendingUrl.href, target, "noopener");
         }
+      }
+
+      hide();
+    });
+
+    moreInfoButton.addEventListener("click", function () {
+      var infoUrl = getSquareInfoUrl(pendingSquareNumber);
+      if (!infoUrl) {
+        hide();
+        return;
+      }
+
+      var target = pendingTarget || "_self";
+      if (target === "_self") {
+        window.location.assign(infoUrl);
+      } else {
+        window.open(infoUrl, target, "noopener");
       }
 
       hide();
@@ -292,7 +345,9 @@
     backdrop.setAttribute("aria-hidden", "true");
     pendingUrl = null;
     pendingTarget = null;
+    pendingSquareNumber = null;
     currentVariant = "standard";
+    syncMoreInfoButton();
 
     var focusTarget = lastFocusedElement && document.contains(lastFocusedElement) ? lastFocusedElement : document.body;
     if (focusTarget && typeof focusTarget.focus === "function") {
@@ -306,6 +361,7 @@
    * @param {string} [target='_self'] - Link target attribute
    * @param {Object} [options] - Display options
    * @param {string} [options.variant='standard'] - Modal variant: 'standard' or 'deeplink'
+   * @param {number} [options.squareNumber] - Square number for the "More info" shortcut
    */
   function show(targetUrl, target, options) {
     var opts = options || {};
@@ -331,6 +387,7 @@
       lastFocusedElement = active && active !== document.body ? active : null;
       pendingUrl = targetUrl;
       pendingTarget = target || "_self";
+      pendingSquareNumber = normalizeSquareNumber(opts.squareNumber);
 
       // Apply variant content
       if (titleNode) {
@@ -362,6 +419,7 @@
         urlNode.style.cursor = "";
         urlNode.style.pointerEvents = "";
       }
+      syncMoreInfoButton();
 
       node.setAttribute("aria-hidden", "false");
       node.classList.add(VISIBLE_CLASS);
@@ -399,12 +457,14 @@
    * @param {string} href - The href to gate
    * @param {Event} [event] - The click event (to prevent default)
    * @param {string} [target='_self'] - Link target attribute
+   * @param {Object} [options] - Display options forwarded to show()
    * @returns {boolean} - True if navigation was handled/blocked, false if should proceed
    */
-  function gateLinkNavigation(href, event, target) {
+  function gateLinkNavigation(href, event, target, options) {
     if (!href) return false;
 
     var linkTarget = target || "_self";
+    var modalOptions = options || {};
 
     // Use SuLinkUtils if available (from link-utils.js)
     var SuLinkUtils = window.SuLinkUtils;
@@ -427,7 +487,7 @@
 
       if (shouldWarnForUrl(destination)) {
         if (event) event.preventDefault();
-        show(destination, linkTarget, { variant: "standard" });
+        show(destination, linkTarget, Object.assign({}, modalOptions, { variant: "standard" }));
         return true;
       }
 
@@ -448,7 +508,7 @@
       case SuLinkUtils.URI_CLASSIFICATION.DEEPLINK:
         // Show deeplink warning modal
         if (event) event.preventDefault();
-        show(classification.displayUri, linkTarget, { variant: "deeplink" });
+        show(classification.displayUri, linkTarget, Object.assign({}, modalOptions, { variant: "deeplink" }));
         return true;
 
       case SuLinkUtils.URI_CLASSIFICATION.EXTERNAL:
@@ -462,7 +522,7 @@
         }
         // Show standard leaving modal
         if (event) event.preventDefault();
-        show(classification.url || classification.displayUri, linkTarget, { variant: "standard" });
+        show(classification.url || classification.displayUri, linkTarget, Object.assign({}, modalOptions, { variant: "standard" }));
         return true;
 
       case SuLinkUtils.URI_CLASSIFICATION.INTERNAL:

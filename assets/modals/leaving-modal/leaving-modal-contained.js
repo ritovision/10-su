@@ -18,8 +18,8 @@ var VARIANTS = {
   standard: {
     title: "You are leaving this site",
     message: "We do NOT vet these links and assume no responsibility if you choose to visit it. Proceed at your own discretion.",
-    cancelText: "Stay Here",
-    confirmText: "Go There",
+    cancelText: "Stay here",
+    confirmText: "Go there",
   },
   deeplink: {
     title: "You are using a deeplink",
@@ -32,14 +32,20 @@ var VARIANTS = {
 var TEMPLATE_HTML = '\
   <div class="su-leaving-backdrop su-leaving-backdrop--contained" aria-hidden="true">\
     <div class="su-leaving" role="dialog" aria-modal="true" aria-labelledby="su-leaving-contained-title">\
+      <button type="button" class="su-leaving__close" aria-label="Close leaving modal" title="Close">\
+        <span aria-hidden="true">X</span>\
+      </button>\
       <div class="su-leaving__title" id="su-leaving-contained-title">You are leaving this site</div>\
       <p class="su-leaving__message">\
         We do NOT vet these links and assume no responsibility if you choose to visit it. Proceed at your own discretion.\
       </p>\
       <a class="su-leaving__url" href="#" target="_blank" rel="noopener"></a>\
       <div class="su-leaving__actions">\
-        <button type="button" class="su-leaving__button su-leaving__button--stay">Stay Here</button>\
-        <button type="button" class="su-leaving__button su-leaving__button--go">Go There</button>\
+        <button type="button" class="su-leaving__button su-leaving__button--stay">Stay here</button>\
+        <div class="su-leaving__primary-actions">\
+          <button type="button" class="su-leaving__button su-leaving__button--go">Go there</button>\
+          <button type="button" class="su-leaving__button su-leaving__button--more-info" hidden>More info</button>\
+        </div>\
       </div>\
     </div>\
   </div>\
@@ -107,11 +113,38 @@ export function createContainedLeavingModal(container, options) {
   var urlNode = null;
   var stayButton = null;
   var goButton = null;
+  var moreInfoButton = null;
+  var closeButton = null;
   var lastFocusedElement = null;
   var pendingUrl = null;
   var pendingTarget = null;
+  var pendingSquareNumber = null;
   var currentVariant = "standard";
   var destroyed = false;
+
+  function normalizeSquareNumber(squareNumber) {
+    var parsed = Number(squareNumber);
+    if (!Number.isInteger(parsed) || parsed < 1 || parsed > 10000) {
+      return null;
+    }
+    return parsed;
+  }
+
+  function getSquareInfoUrl(squareNumber) {
+    var normalizedSquareNumber = normalizeSquareNumber(squareNumber);
+    if (!normalizedSquareNumber) {
+      return null;
+    }
+    return baseurl + "/square#" + normalizedSquareNumber;
+  }
+
+  function syncMoreInfoButton() {
+    if (!moreInfoButton) {
+      return;
+    }
+    var infoUrl = getSquareInfoUrl(pendingSquareNumber);
+    moreInfoButton.hidden = !infoUrl;
+  }
 
   function triggerDeeplink(urlString) {
     try {
@@ -199,14 +232,17 @@ export function createContainedLeavingModal(container, options) {
     urlNode = backdrop.querySelector(".su-leaving__url");
     stayButton = backdrop.querySelector(".su-leaving__button--stay");
     goButton = backdrop.querySelector(".su-leaving__button--go");
+    moreInfoButton = backdrop.querySelector(".su-leaving__button--more-info");
+    closeButton = backdrop.querySelector(".su-leaving__close");
 
-    if (!urlNode || !stayButton || !goButton) {
+    if (!urlNode || !stayButton || !goButton || !moreInfoButton || !closeButton) {
       console.error("[ContainedLeavingModal] Missing modal parts");
       backdrop = null;
       return;
     }
 
     // Event handlers
+    closeButton.addEventListener("click", hide);
     stayButton.addEventListener("click", hide);
 
     goButton.addEventListener("click", function () {
@@ -228,6 +264,23 @@ export function createContainedLeavingModal(container, options) {
         } else {
           window.open(pendingUrl.href, target, "noopener");
         }
+      }
+
+      hide();
+    });
+
+    moreInfoButton.addEventListener("click", function () {
+      var infoUrl = getSquareInfoUrl(pendingSquareNumber);
+      if (!infoUrl) {
+        hide();
+        return;
+      }
+
+      var target = pendingTarget || "_self";
+      if (target === "_self") {
+        window.location.assign(infoUrl);
+      } else {
+        window.open(infoUrl, target, "noopener");
       }
 
       hide();
@@ -323,7 +376,9 @@ export function createContainedLeavingModal(container, options) {
     backdrop.setAttribute("aria-hidden", "true");
     pendingUrl = null;
     pendingTarget = null;
+    pendingSquareNumber = null;
     currentVariant = "standard";
+    syncMoreInfoButton();
 
     // Restore focus within container
     if (lastFocusedElement && container.contains(lastFocusedElement)) {
@@ -337,6 +392,7 @@ export function createContainedLeavingModal(container, options) {
    * @param {string} [target='_self'] - Link target attribute
    * @param {Object} [showOptions] - Display options
    * @param {string} [showOptions.variant='standard'] - Modal variant: 'standard' or 'deeplink'
+   * @param {number} [showOptions.squareNumber] - Square number for the "More info" shortcut
    */
   function show(targetUrl, target, showOptions) {
     if (destroyed) return;
@@ -367,6 +423,7 @@ export function createContainedLeavingModal(container, options) {
 
     pendingUrl = targetUrl;
     pendingTarget = target || "_self";
+    pendingSquareNumber = normalizeSquareNumber(showOpts.squareNumber);
 
     // Apply variant content
     if (titleNode) {
@@ -398,6 +455,7 @@ export function createContainedLeavingModal(container, options) {
       urlNode.style.cursor = "";
       urlNode.style.pointerEvents = "";
     }
+    syncMoreInfoButton();
 
     backdrop.setAttribute("aria-hidden", "false");
     backdrop.classList.add(VISIBLE_CLASS);
@@ -413,12 +471,14 @@ export function createContainedLeavingModal(container, options) {
    * @param {string} href - The href to gate
    * @param {Event} [event] - The click event (to prevent default)
    * @param {string} [target='_self'] - Link target attribute
+   * @param {Object} [options] - Display options forwarded to show()
    * @returns {boolean} - True if navigation was handled/blocked, false if should proceed
    */
-  function gateLinkNavigation(href, event, target) {
+  function gateLinkNavigation(href, event, target, options) {
     if (!href) return false;
 
     var linkTarget = target || "_self";
+    var modalOptions = options || {};
 
     // Use SuLinkUtils if available (from link-utils.js)
     var SuLinkUtils = window.SuLinkUtils;
@@ -442,7 +502,7 @@ export function createContainedLeavingModal(container, options) {
 
       if (shouldWarnForUrl(destination)) {
         if (event) event.preventDefault();
-        show(destination, linkTarget, { variant: "standard" });
+        show(destination, linkTarget, Object.assign({}, modalOptions, { variant: "standard" }));
         return true;
       }
 
@@ -463,7 +523,7 @@ export function createContainedLeavingModal(container, options) {
       case SuLinkUtils.URI_CLASSIFICATION.DEEPLINK:
         // Show deeplink warning modal
         if (event) event.preventDefault();
-        show(classification.displayUri, linkTarget, { variant: "deeplink" });
+        show(classification.displayUri, linkTarget, Object.assign({}, modalOptions, { variant: "deeplink" }));
         return true;
 
       case SuLinkUtils.URI_CLASSIFICATION.EXTERNAL:
@@ -477,7 +537,7 @@ export function createContainedLeavingModal(container, options) {
         }
         // Show standard leaving modal
         if (event) event.preventDefault();
-        show(classification.url || classification.displayUri, linkTarget, { variant: "standard" });
+        show(classification.url || classification.displayUri, linkTarget, Object.assign({}, modalOptions, { variant: "standard" }));
         return true;
 
       case SuLinkUtils.URI_CLASSIFICATION.INTERNAL:
@@ -545,6 +605,9 @@ export function createContainedLeavingModal(container, options) {
     lastFocusedElement = null;
     pendingUrl = null;
     pendingTarget = null;
+    pendingSquareNumber = null;
+    moreInfoButton = null;
+    closeButton = null;
   }
 
   // Initialize modal DOM on creation

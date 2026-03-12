@@ -325,7 +325,7 @@ export function initHomepageBillboard(options) {
       const modal = window.SuLeavingModal;
 
       if (modal && typeof modal.gateLinkNavigation === "function") {
-        const handled = modal.gateLinkNavigation(ui.destinationHref, event, target);
+        const handled = modal.gateLinkNavigation(ui.destinationHref, event, target, { squareNumber });
         if (handled) return;
       }
 

@@ -99,7 +99,6 @@
   }
 
   .su-leaving-backdrop--contained .su-leaving__actions {
-    flex-direction: column;
     gap: 0.5rem;
   }
 
