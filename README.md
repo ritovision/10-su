@@ -1,4 +1,4 @@
-# Su Squares dApp
+# Playground-as-an-ecosystem Fork of Su Squares
 
 [![Su OG](assets/images/su-OG.png)](https://tenthousandsu.com/)
 
@@ -6,7 +6,7 @@
 [![Deployed Contract](https://img.shields.io/badge/Deployed%20Contract-%23d53392?style=for-the-badge&logo=ethereum&logoColor=white)](https://etherscan.io/address/0xE9e3F9cfc1A64DFca53614a0182CFAD56c10624F)
 [![MIT License](https://img.shields.io/badge/MIT%20License-%23ffd700?style=for-the-badge&logo=data:image/svg%2Bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDAwIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI%2BCiAgPHBhdGggZD0iTTEyIDN2MTgiLz4KICA8cGF0aCBkPSJNNiA3aDEyIi8%2BCiAgPHBhdGggZD0iTTYgN2wtMyA2aDZsLTMtNnoiLz4KICA8cGF0aCBkPSJNMTggN2wtMyA2aDZsLTMtNnoiLz4KICA8cGF0aCBkPSJNOCAyMWg4Ii8%2BCjwvc3ZnPg%3D%3D)](LICENSE)
 
-This source code runs the Su Squares dApp at https://tenthousandsu.com
+This repository is an independent RitoVision modernization fork of Su Squares at https://su.ritovision.com. It is not the canonical source for the official Su Squares site at https://tenthousandsu.com, and it should not be treated as a proposal for replacing that site wholesale.
 
 Su Squares is a historical and pioneering NFT project on the Ethereum blockchain from 2017. 
 
@@ -18,7 +18,17 @@ It consists of two main parts:
 > [!NOTE]
 > *A separate and complementary underlay smart contract is used for personalizing squares; it's cheaper than the original contract that governs square ownership.*
 
-This repo is intended as both a living product and a historical artifact made into an exploratory playground. It has been designed for curious developers to run the entire end-to-end project locally and experiment with it. From setting up a local EVM blockchain, deploying the smart contracts to it (or Sepolia) and interacting with it through an API-like script CLI environment, to running the dApp locally and customizing the Billboard to your liking.
+This fork is intended as both a living product experiment and a historical artifact made into an exploratory playground. It preserves the legacy Jekyll/GitHub Pages deployment shape and the original project content, while expanding the surrounding product surface and developer environment for experimentation, local learning, and extension.
+
+## What this fork does
+
+This fork modernizes the Su Squares experience around the existing historical base rather than replacing that base. It adds a broader dApp surface, including mobile-responsive layouts, installable PWA support, centralized navigation, richer square lookup and chooser flows, and a clearer personalization experience with CSV and image batch tooling.
+
+The Billboard is treated as shared product infrastructure instead of a homepage-only script. Its reusable core supports homepage browsing, embeds, square choosing, and personalization flows, with touch-friendly interaction, ARIA semantics, focus management, safer outbound-link handling, blocklists, and configurable embed behavior.
+
+The personalization and web3 flows are also expanded. The fork includes a rebuilt `personalize-modern.html` experience, in-app unpersonalization, branded wallet/account/transaction UI, multi-wallet support, network context, and transaction states that make the dApp feel less like a static archive and more like a modern on-chain application.
+
+On the developer side, this repo is structured as a playground-as-an-ecosystem monorepo. It keeps the Jekyll site at the root while adding supporting Node workspaces for smart-contract development, local chain infrastructure, vendored dependency bundling, Storybook, Vitest, Playwright, and agent-guided repository workflows.
 
 ## Getting Started
 
@@ -65,29 +75,24 @@ This monorepo is organized into workspaces. The primary root directory is the Je
 `nodejs/storybook`: Storybook staging area for dApp UI components
 
 
-## How the dApp's live Billboard syncs with on-chain state
+## Blockchain data and Billboard state in this fork
 
-The Billboard state shown on this dApp is refreshed by the Su Squares update script:  
+The official Su Squares site historically refreshes its live Billboard state with the Su Squares update script:  
 https://github.com/su-squares/update-script
 
-A GitHub Actions workflow in this repo (`load-from-blockchain.yml`) runs **hourly** (at the **21st minute**) and:
+This fork does **not** use that `load-from-blockchain` workflow as its operating model. Do not assume the Billboard, `build/`, or ERC-721 metadata/images in this repository are automatically refreshed from mainnet by GitHub Actions.
 
-- checks whether anything has changed on-chain (`have-there-been-updates`)
-- if changes exist, pulls the latest contract state (`load-blockchain`)
-- regenerates the site build artifacts + ERC-721 metadata/images
-- commits updated outputs back into this repo (`build/` and `erc721/`), which GitHub Pages serves live (for local dev, exclude `erc721/` in `_config.yml` or Jekyll builds are extremely slow)
-
-Syncing can be manually triggered via **Actions → “Load from blockchain” → Run workflow**.
+For local development and experimentation, use the smart-contract workspace, local chain tooling, Sepolia configuration, and site scripts intentionally. Treat generated chain-derived artifacts as explicit development outputs, not as an hourly canonical sync from the live Su Squares contract.
 
 ## Embedding the Billboard on your site
 
-If you are looking to embed the Billboard on your own site, use the following snippet (or extract the URL):
+If you are looking to embed the official Su Squares Billboard on your own site, use the following snippet (or extract the URL):
 
 ```html
 <iframe width="600" height="600" frameborder="0" title="Su Squares Billboard" src="https://tenthousandsu.com/embed"></iframe>
 ```
 
-or if you wish to customize its properties, visit the live [Embed Builder](https://tenthousandsu.com/embed-builder)
+For this fork, use the same `/embed` and `/embed-builder` paths on whichever deployment host you are running.
 
 ## Contributing
 
